@@ -1,144 +1,14 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <wiringPi.h>
-#include <pthread.h>
-#include <sys/time.h>
-#include <time.h>
-#include <signal.h>
-
-//function defs
-void* hardwareManager(void* args);
-int initMemory();
-int initHardware();
-int cleanHardware();
-int testLeds();
-long currentMillis();
-int buttonAction(int buttonIndex, bool state);
-void cleanUp(int signal_number);
-
-//function pointers
-//typedef int (*buttonActionCB_fptr)(int, bool); //int buttonIndex, bool state
+#include "hardwareManager.h"
 
 // Config vars - ///TODO: make a config.json or similar to easily pull out these values.
-#define NUM_OF_LEDS 4
-#define NUM_OF_BUTTONS 4
 int defineLeds[NUM_OF_LEDS] = {1,4,5,6};
 int defineButtons[NUM_OF_BUTTONS] = {7,0,2,3};
-#define HARDWARE_THREAD_TIME_MS 5
 
-//create memory structures
-//structure for a button
-typedef struct {
-	//values protected by hardwareLock mutex
-	int pin;
-	uint8_t debounceVals;
-	bool debouncing;
-	bool state;
-	//end values protected by hardwareLock mutex
-} Button;
-
-//structure for a led
-typedef struct {
-	//values protected by hardwareLock mutex
-	int pin;
-	bool state;
-	//end values protected by hardwareLock mutex
-} Led;
-
-// structure for hardware
-typedef struct {
-	pthread_t id;
-	pthread_mutex_t hardwareLock;
-	long lastReadMs;
-	bool halt;
-	//values protected by hardwareLock mutex
-	Button buttons[NUM_OF_BUTTONS];
-	Led leds[NUM_OF_LEDS];
-	//end values protected by hardwareLock mutex
-} Hardware;
-
-// structure for app memory
-typedef struct{
-	Hardware hardware;
-	bool forceShutdown;
-} AppMemory;
-
-// structure for quick referencing pointers.
-typedef struct {
-	Hardware *hardware;
-	bool *forceShutdown;
-} App;
-
-// Global Vars
-volatile sig_atomic_t shutdownFlag = FALSE; //flag used by signal handler to indicate shutdown
-
-bool forceShutdown = FALSE; //global flag that can be set to true to force all threads to stop and return.
-/* FUNCTION: main
- * DESC: Allocate memory and manage the threads in this program.
- *
- * INPUTS:
- * OUTPUTS:*/
-int main()
-{
-	//set up signal handler to allow for graceful shutdown of the program.
-	struct sigaction sigterm_action = { 
-    	.sa_handler = cleanUp 
-	};
-	sigemptyset(&sigterm_action.sa_mask);
-
-	if (sigaction(SIGINT, &sigterm_action, NULL) == -1 ||
-    	sigaction(SIGTERM, &sigterm_action, NULL) == -1 ||
-    	sigaction(SIGHUP, &sigterm_action, NULL) == -1) 
-	{
-        perror("sigaction");
-        exit(EXIT_FAILURE);
-    }
-
-	//create memory
-	AppMemory *mem = calloc(1, sizeof(AppMemory));
-	if (!mem) 
-	{
-		return -1; //memory allocation failed.
-	}
-
-	//connect memory to quick reference struct.
-	App app;
-	app.hardware = &mem->hardware;
-
-	//set up and kick off the hardware manager
-	initHardware(app.hardware);
-
-	//testing for now, this keeps the program running for 24 hours.
-	struct timeval endTime;
-	struct timeval currentTime;
-
-	gettimeofday(&endTime, NULL);
-	gettimeofday(&currentTime, NULL);
-
-	endTime.tv_sec += 86400; //add 24 hours to the current time for the end time.
-
-	printf("ENDING TIME: %ld\n", endTime.tv_sec);
-
-	while((currentTime.tv_sec <= endTime.tv_sec) && !shutdownFlag)
-	{
-		gettimeofday(&currentTime, NULL);
-		pthread_mutex_lock(&app.hardware->hardwareLock);
-		app.hardware->leds[0].state = !app.hardware->leds[0].state;
-		pthread_mutex_unlock(&app.hardware->hardwareLock);
-		delay(2000);
-	}
-
-	app.hardware->halt = TRUE;
-
-	//wait for the hardware manager to finish cleaning.
-	pthread_join(app.hardware->id, NULL);
-
-	free(mem);
-
-	return 0;
-}
+//local function defs
+void* hardwareManager(void* args);
+int cleanHardware();
+int buttonAction(int buttonIndex, uint8_t state);
+long currentMillis();
 
 /* FUNCTION: hardwareManager
  * DESC: This is a thread. It should run until it is told to stop by setting the hardware memory halt bool to TRUE.
@@ -157,7 +27,7 @@ void* hardwareManager(void* args)
 
 	Hardware *hwMem = (Hardware *)args;
 	int i = 0;
-	while(!hwMem->halt && !shutdownFlag)
+	while(!hwMem->halt)
 	{
 		///TODO: make this less time intensive? Look into setting button presses on an interupt or poll less frequently until a change is found then speed it up for a short period...
 		delay(1);
@@ -172,22 +42,21 @@ void* hardwareManager(void* args)
 				hwMem->buttons[buttonIndex].debounceVals = (uint8_t)(hwMem->buttons[buttonIndex].debounceVals << 1) + digitalRead(hwMem->buttons[buttonIndex].pin);
 				switch(hwMem->buttons[buttonIndex].debounceVals)
 				{
-					///TODO: make it so the first "press/release" is thrown out. This is it getting a defult state.
 					case 0:
-						if(hwMem->buttons[buttonIndex].state == FALSE)
+						if(hwMem->buttons[buttonIndex].state == BUTTON_STATE_PRESSED)
 						{
 							buttonAction(buttonIndex,hwMem->buttons[buttonIndex].state);
 						}
 						hwMem->buttons[buttonIndex].debouncing = FALSE;
-						hwMem->buttons[buttonIndex].state = TRUE;
+						hwMem->buttons[buttonIndex].state = BUTTON_STATE_RELEASED;
 						break;
 					case 255:
-						if(hwMem->buttons[buttonIndex].state == TRUE)
+						if(hwMem->buttons[buttonIndex].state == BUTTON_STATE_RELEASED)
 						{
 							buttonAction(buttonIndex,hwMem->buttons[buttonIndex].state);
 						}
 						hwMem->buttons[buttonIndex].debouncing = FALSE;
-						hwMem->buttons[buttonIndex].state = FALSE;
+						hwMem->buttons[buttonIndex].state = BUTTON_STATE_PRESSED;
 						break;
 					default:
 						hwMem->buttons[buttonIndex].debouncing = TRUE;
@@ -203,17 +72,6 @@ void* hardwareManager(void* args)
 	}
 	cleanHardware(hwMem);
 	pthread_exit(NULL);
-}
-
-/* FUNCTION: cleanUp
- * DESC: This function is called by the signal handler when a SIGINT, SIGTERM or SIGHUP is sent to the program. It sets the global flag shutdownFlag to true, 
- * which should cause all threads to stop and return. This allows for a graceful shutdown of the program instead of just killing 
- * it and leaving hardware in an unknown state.
- * INPUTS: signal_number - the signal that was sent to the program. 
- * OUTPUTS: N/A*/
-void cleanUp(int signal_number)
-{
-	shutdownFlag = TRUE;
 }
 
 /* FUNCTION: initHardware
@@ -235,7 +93,7 @@ int initHardware(Hardware *hwMem)
 	}
 	for(int buttonIndex = 0; buttonIndex < NUM_OF_BUTTONS; buttonIndex++)
 	{
-		hwMem->buttons[buttonIndex] = (Button){ .pin = defineButtons[buttonIndex], .debouncing = TRUE, .debounceVals = 55, .state = FALSE };
+		hwMem->buttons[buttonIndex] = (Button){ .pin = defineButtons[buttonIndex], .debouncing = TRUE, .debounceVals = 55, .state = BUTTON_STATE_UNDEFINED };
 		pinMode(hwMem->buttons[buttonIndex].pin,INPUT);
 		pullUpDnControl(hwMem->buttons[buttonIndex].pin, PUD_OFF);
 	}
@@ -282,29 +140,16 @@ int testLeds(Hardware *hwMem)
 	return 0;
 }
 
-/* FUNCTION: currentMillis()
- * DESC: called to get the system time in ms.
- *
- * INPUTS: n/a
- * OUTPUTS: system time in ms  */
-long currentMillis()
-{
-	struct timeval tp;
-	gettimeofday(&tp, NULL);
-	return tp.tv_sec * 1000 + tp.tv_usec / 1000;
-}
-
 /* FUNCTION: buttonAction
  * DESC: This function is called by the Hardware thread whenever a button is freshly pressed or released. It copies the (undecided yet) function pointer or string related to that buttons new state
  * to a (not yet created) action queue. It does this in a thread safe way because the queue is being serviced at a regular interval via another thread. 
  * INPUTS: buttonIndex - the button that was pressed, state - the new state of the button.
  * OUTPUTS: 0 for no errors.*/
-int buttonAction(int buttonIndex, bool state)
+int buttonAction(int buttonIndex, uint8_t state)
 {
 	static bool toggle = TRUE;
-	if(state)
+	if(state == BUTTON_STATE_PRESSED)
 	{
-		printf("PRESSED %d STATE %d\n", buttonIndex, state);
 		if(toggle)
 		{
 			///TODO: Whenever this function is called, a function pointer should be added to the queue for an action to be taken. It should only do this if the queue is not protected by a mutex lock.
@@ -317,4 +162,16 @@ int buttonAction(int buttonIndex, bool state)
 	toggle = !toggle;
 	}
 	return 0;
+}
+
+/* FUNCTION: currentMillis()
+ * DESC: called to get the system time in ms.
+ *
+ * INPUTS: n/a
+ * OUTPUTS: system time in ms  */
+long currentMillis()
+{
+	struct timeval tp;
+	gettimeofday(&tp, NULL);
+	return tp.tv_sec * 1000 + tp.tv_usec / 1000;
 }
