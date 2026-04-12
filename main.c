@@ -6,6 +6,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 #include <time.h>
+//#include <signal.h>
 
 
 //function defs
@@ -16,6 +17,7 @@ int cleanHardware();
 int testLeds();
 long currentMillis();
 int buttonAction(int buttonIndex, bool state);
+//int gracefulShutdown();
 
 //function pointers
 //typedef int (*buttonActionCB_fptr)(int, bool); //int buttonIndex, bool state
@@ -75,6 +77,9 @@ typedef struct {
  * OUTPUTS:*/
 int main()
 {
+	//set up a signal handler for graceful shutdown on SIGINT (ctrl+c)
+	//signal(SIGINT, gracefulShutdown);
+
 	//create memory
 	AppMemory *mem = calloc(1, sizeof(AppMemory));
 	if (!mem) {
@@ -88,11 +93,23 @@ int main()
 	//set up and kick off the hardware manager
 	initHardware(app.hardware);
 
-	for(int i = 0; i < 300; i++){
+	struct timeval endTime;
+	struct timeval currentTime;
+
+	gettimeofday(&endTime, NULL);
+	gettimeofday(&currentTime, NULL);
+
+	endTime.tv_sec += 86400; //add 24 hours to the current time for the end time.
+
+	printf("ENDING TIME: %ld\n", endTime.tv_sec);
+
+	while(currentTime.tv_sec <= endTime.tv_sec)
+	{
+		gettimeofday(&currentTime, NULL);
 		pthread_mutex_lock(&app.hardware->hardwareLock);
 		app.hardware->leds[0].state = !app.hardware->leds[0].state;
 		pthread_mutex_unlock(&app.hardware->hardwareLock);
-		delay(100);
+		delay(2000);
 	}
 
 	app.hardware->halt = TRUE;
@@ -262,11 +279,11 @@ int buttonAction(int buttonIndex, bool state)
 		if(toggle)
 		{
 			///TODO: Whenever this function is called, a function pointer should be added to the queue for an action to be taken. It should only do this if the queue is not protected by a mutex lock.
-			system("asterisk -rx \"rpt fun 443240 *3472440\"");
+			system("asterisk -rx \"rpt fun 443240 *347243\"");
 		}
 		else
 		{
-			system("asterisk -rx \"rpt fun 443240 *1472440\"");
+			system("asterisk -rx \"rpt fun 443240 *147243\"");
 		}
 	toggle = !toggle;
 	}
