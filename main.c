@@ -6,8 +6,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 #include <time.h>
-//#include <signal.h>
-
+#include <signal.h>
 
 //function defs
 void* hardwareManager(void* args);
@@ -17,12 +16,12 @@ int cleanHardware();
 int testLeds();
 long currentMillis();
 int buttonAction(int buttonIndex, bool state);
-//int gracefulShutdown();
+void cleanUp(int signal_number);
 
 //function pointers
 //typedef int (*buttonActionCB_fptr)(int, bool); //int buttonIndex, bool state
 
-//global vars - ///TODO: make a config.json or similar to easily pull out these values.
+// Config vars - ///TODO: make a config.json or similar to easily pull out these values.
 #define NUM_OF_LEDS 4
 #define NUM_OF_BUTTONS 4
 int defineLeds[NUM_OF_LEDS] = {1,4,5,6};
@@ -63,13 +62,19 @@ typedef struct {
 // structure for app memory
 typedef struct{
 	Hardware hardware;
+	bool forceShutdown;
 } AppMemory;
 
 // structure for quick referencing pointers.
 typedef struct {
 	Hardware *hardware;
+	bool *forceShutdown;
 } App;
 
+// Global Vars
+volatile sig_atomic_t shutdownFlag = FALSE; //flag used by signal handler to indicate shutdown
+
+bool forceShutdown = FALSE; //global flag that can be set to true to force all threads to stop and return.
 /* FUNCTION: main
  * DESC: Allocate memory and manage the threads in this program.
  *
@@ -77,22 +82,35 @@ typedef struct {
  * OUTPUTS:*/
 int main()
 {
-	//set up a signal handler for graceful shutdown on SIGINT (ctrl+c)
-	//signal(SIGINT, gracefulShutdown);
+	//set up signal handler to allow for graceful shutdown of the program.
+	struct sigaction sigterm_action = { 
+    	.sa_handler = cleanUp 
+	};
+	sigemptyset(&sigterm_action.sa_mask);
+
+	if (sigaction(SIGINT, &sigterm_action, NULL) == -1 ||
+    	sigaction(SIGTERM, &sigterm_action, NULL) == -1 ||
+    	sigaction(SIGHUP, &sigterm_action, NULL) == -1) 
+	{
+        perror("sigaction");
+        exit(EXIT_FAILURE);
+    }
 
 	//create memory
 	AppMemory *mem = calloc(1, sizeof(AppMemory));
-	if (!mem) {
+	if (!mem) 
+	{
 		return -1; //memory allocation failed.
 	}
 
-	//create app pointer.
+	//connect memory to quick reference struct.
 	App app;
 	app.hardware = &mem->hardware;
 
 	//set up and kick off the hardware manager
 	initHardware(app.hardware);
 
+	//testing for now, this keeps the program running for 24 hours.
 	struct timeval endTime;
 	struct timeval currentTime;
 
@@ -103,7 +121,7 @@ int main()
 
 	printf("ENDING TIME: %ld\n", endTime.tv_sec);
 
-	while(currentTime.tv_sec <= endTime.tv_sec)
+	while((currentTime.tv_sec <= endTime.tv_sec) && !shutdownFlag)
 	{
 		gettimeofday(&currentTime, NULL);
 		pthread_mutex_lock(&app.hardware->hardwareLock);
@@ -139,7 +157,7 @@ void* hardwareManager(void* args)
 
 	Hardware *hwMem = (Hardware *)args;
 	int i = 0;
-	while(!hwMem->halt)
+	while(!hwMem->halt && !shutdownFlag)
 	{
 		///TODO: make this less time intensive? Look into setting button presses on an interupt or poll less frequently until a change is found then speed it up for a short period...
 		delay(1);
@@ -185,6 +203,17 @@ void* hardwareManager(void* args)
 	}
 	cleanHardware(hwMem);
 	pthread_exit(NULL);
+}
+
+/* FUNCTION: cleanUp
+ * DESC: This function is called by the signal handler when a SIGINT, SIGTERM or SIGHUP is sent to the program. It sets the global flag shutdownFlag to true, 
+ * which should cause all threads to stop and return. This allows for a graceful shutdown of the program instead of just killing 
+ * it and leaving hardware in an unknown state.
+ * INPUTS: signal_number - the signal that was sent to the program. 
+ * OUTPUTS: N/A*/
+void cleanUp(int signal_number)
+{
+	shutdownFlag = TRUE;
 }
 
 /* FUNCTION: initHardware
