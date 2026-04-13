@@ -4,7 +4,7 @@
 int defineLeds[NUM_OF_LEDS] = {1,4,5,6};
 int defineButtons[NUM_OF_BUTTONS] = {7,0,2,3};
 
-//local function defs
+// Private Functions
 void* hardwareManager(void* args);
 int cleanHardware();
 int buttonAction(int buttonIndex, uint8_t state);

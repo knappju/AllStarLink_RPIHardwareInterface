@@ -8,6 +8,7 @@
 #include <time.h>
 #include <stdint.h>
 
+// Defines
 #define HARDWARE_THREAD_TIME_MS 5
 #define BUTTON_STATE_UNDEFINED 0
 #define BUTTON_STATE_RELEASED 1
@@ -17,10 +18,7 @@
 #define NUM_OF_LEDS 4
 #define NUM_OF_BUTTONS 4
 
-int initHardware();
-int testLeds();
-
-//create memory structures
+// Public Hardware Structures
 //structure for a button
 typedef struct {
 	//values protected by hardwareLock mutex
@@ -50,5 +48,9 @@ typedef struct {
 	Led leds[NUM_OF_LEDS];
 	//end values protected by hardwareLock mutex
 } Hardware;
+
+// Public Functions
+int initHardware();
+int testLeds();
 
 #endif /* HARDWAREMANAGER_H */

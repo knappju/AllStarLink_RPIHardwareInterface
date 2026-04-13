@@ -6,6 +6,7 @@
 #include <time.h>
 #include <signal.h>
 #include "hardwareManager.h"
+#include "Listener.h"
 
 //function defs
 void cleanUp(int signal_number);
@@ -13,11 +14,13 @@ void cleanUp(int signal_number);
 // structure for app memory
 typedef struct{
 	Hardware hardware;
+	Listener listener;
 } AppMemory;
 
 // structure for quick referencing pointers.
 typedef struct {
 	Hardware *hardware;
+	Listener *listener;
 } App;
 
 // Global Vars
@@ -54,9 +57,12 @@ int main()
 	//connect memory to quick reference struct.
 	App app;
 	app.hardware = &mem->hardware;
-
+	app.listener = &mem->listener;
 	//set up and kick off the hardware manager
 	initHardware(app.hardware);
+
+	//set up and kick off the listener
+	initListener(app.listener);
 
 	//testing for now, this keeps the program running for 24 hours.
 	struct timeval endTime;
@@ -79,9 +85,11 @@ int main()
 	}
 
 	app.hardware->halt = TRUE;
+	app.listener->halt = TRUE;
 
 	//wait for the hardware manager to finish cleaning.
 	pthread_join(app.hardware->id, NULL);
+	pthread_join(app.listener->id, NULL);
 
 	free(mem);
 
