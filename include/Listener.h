@@ -14,7 +14,7 @@
 #define LISTENER_THREAD_TIME_MS 250
 #define FILE_FIRST_READ_STARTING_LINE_OFFSET 25
 #define FILE_LINE_CHAR_SIZE_MAX 48
-#define LOG_FILE_LOCATION "/var/log/asterisk/node_activity/443240/20260413.txt"
+#define LOG_FILE_PATH "/var/log/asterisk/node_activity/443240"
 #define ACTION_FILTERS {"RXKEY", "TXKEY", "RXUNKEY", "TXUNKEY", "LINKTRX", "LINKLOCALMONITOR", "LINKDISC"}
 
 typedef struct{

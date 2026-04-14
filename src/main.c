@@ -86,7 +86,7 @@ int main()
 		pthread_mutex_lock(&app.hardware->hardwareLock);
 		app.hardware->leds[0].state = !app.hardware->leds[0].state;
 		pthread_mutex_unlock(&app.hardware->hardwareLock);
-		delay(2000);
+		delay(100);
 	}
 
 	app.hardware->halt = TRUE;

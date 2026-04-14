@@ -12,6 +12,7 @@ const char *logActionFilter[] = ACTION_FILTERS;
 // private functions
 void ParseLogAction(const char *logLine, LogAction *action);
 void printLogAction(const LogAction *action);   
+char *makeLogFilePathAndName();
 
 /* FUNCTION: initListener
  * DESC: Used to initialize the listener thread and related variables.
@@ -44,11 +45,11 @@ void* listener(void* args)
     }
 
     Listener *lMem = (Listener *)args;
-    
+
     //find a good spot to start reading.
-    logFile = fopen(LOG_FILE_LOCATION, "r");
+    logFile = fopen(makeLogFilePathAndName(), "r");
     if (!logFile)    {
-        printf("Error opening log file: %s\n", LOG_FILE_LOCATION);
+        printf("Error opening log file: %s\n", makeLogFilePathAndName());
         pthread_exit(NULL);
     }
 
@@ -62,7 +63,7 @@ void* listener(void* args)
     while(!lMem->halt)
     {
         //Open the log file and hold onto the handle.
-        logFile = fopen(LOG_FILE_LOCATION, "r");
+        logFile = fopen(makeLogFilePathAndName() , "r");
         if (!logFile)break;
         fseek(logFile, currentLocation, SEEK_SET);
 
@@ -94,3 +95,24 @@ void ParseLogAction(const char *logLine, LogAction *action) {
 void printLogAction(const LogAction *action) {
     printf("Time: %ld, Action: %s, Name: %s\n", action->LastUpdate, action->action, action->name);
 } 
+
+char *makeLogFilePathAndName(){
+    time_t t = time(NULL);
+    struct tm *tm_info = localtime(&t);
+    char *output = malloc(80);
+    if (output == NULL) {
+        return NULL; // Handle allocation failure
+    }
+    // Use snprintf to safely format the entire path
+    int len = snprintf(output, 80, "%s/%04d%02d%02d.txt", 
+                       LOG_FILE_PATH, 
+                       tm_info->tm_year + 1900, 
+                       tm_info->tm_mon + 1, 
+                       tm_info->tm_mday);
+    // Check if the buffer was large enough
+    if (len < 0 || len >= 80) {
+        free(output);
+        return NULL;
+    }
+    return output;
+}
