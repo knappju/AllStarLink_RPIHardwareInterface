@@ -15,21 +15,12 @@
 #define FILE_FIRST_READ_STARTING_LINE_OFFSET 25
 #define FILE_LINE_CHAR_SIZE_MAX 48
 #define LOG_FILE_LOCATION "/var/log/asterisk/node_activity/443240/20260413.txt"
-
-typedef struct{
-    char name[17]; // 16 chars plus null terminator.
-    long LastUpdate;
-    bool rxKey;
-    bool txKey;
-    uint8_t mode;
-} Node;
+#define ACTION_FILTERS {"RXKEY", "TXKEY", "RXUNKEY", "TXUNKEY", "LINKTRX", "LINKLOCALMONITOR", "LINKDISC"}
 
 typedef struct{
     pthread_mutex_t listenerLock;
     pthread_t id;
-	long lastReadMs;
 	bool halt;
-    Node nodes[10]; ///TODO: make this dynamic or at least a #define for the max number of nodes we can track.
 } Listener;
 
 // Public Functions

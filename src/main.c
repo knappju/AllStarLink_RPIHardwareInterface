@@ -7,6 +7,7 @@
 #include <signal.h>
 #include "hardwareManager.h"
 #include "Listener.h"
+#include "ASLNode.h"
 
 //function defs
 void cleanUp(int signal_number);
@@ -15,12 +16,14 @@ void cleanUp(int signal_number);
 typedef struct{
 	Hardware hardware;
 	Listener listener;
+	ASLNode *nodes;
 } AppMemory;
 
 // structure for quick referencing pointers.
 typedef struct {
 	Hardware *hardware;
 	Listener *listener;
+	ASLNode *nodes;
 } App;
 
 // Global Vars
@@ -58,6 +61,8 @@ int main()
 	App app;
 	app.hardware = &mem->hardware;
 	app.listener = &mem->listener;
+	app.nodes = mem->nodes;
+	
 	//set up and kick off the hardware manager
 	initHardware(app.hardware);
 
