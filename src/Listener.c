@@ -1,12 +1,5 @@
 #include "Listener.h"
 
-// private variables
-typedef struct{
-    char name[17]; // 16 chars plus null terminator.
-    long LastUpdate;
-    char action[33]; // 32 chars plus null terminator.
-} LogAction;
-
 const char *logActionFilter[] = ACTION_FILTERS;
 
 // private functions
@@ -45,6 +38,7 @@ void* listener(void* args)
     }
 
     Listener *lMem = (Listener *)args;
+    TAILQ_INIT(&lMem->recentActions);
 
     //find a good spot to start reading.
     logFile = fopen(makeLogFilePathAndName(), "r");
@@ -73,11 +67,16 @@ void* listener(void* args)
             for(int i = 0; i < sizeof(logActionFilter)/sizeof(logActionFilter[0]); i++)
             {
                 if(strstr(buffer, logActionFilter[i]) != NULL)
-                {                    
-                    LogAction action;
-                    ParseLogAction(buffer, &action);
-                    printLogAction(&action);
-                    break; // No need to check other filters if we found a match.
+                {                 
+                    LogAction* newAction = malloc(sizeof(LogAction));
+                    if (newAction == NULL) {
+                        printf("Memory allocation failed for new log action.\n");
+                        continue; // Skip this action if we can't allocate memory.
+                    }
+                    ParseLogAction(buffer, newAction);
+                    pthread_mutex_lock(&lMem->listenerLock);
+                    TAILQ_INSERT_TAIL(&lMem->recentActions, newAction, entries);
+                    pthread_mutex_unlock(&lMem->listenerLock);
                 }
             }
             currentLocation = ftell(logFile); // Update for the next cycle
@@ -85,6 +84,20 @@ void* listener(void* args)
         fclose(logFile);
         usleep(500000); // sleep for 500ms
     }
+
+    //delete all of the log actions in the list and free their memory.
+    LogAction *action;
+    pthread_mutex_lock(&lMem->listenerLock);
+    while (!TAILQ_EMPTY(&lMem->recentActions)) {
+        action = TAILQ_FIRST(&lMem->recentActions);
+        TAILQ_REMOVE(&lMem->recentActions, action, entries);
+        free(action);
+    }
+    pthread_mutex_unlock(&lMem->listenerLock);
+
+    TAILQ_INIT(&lMem->recentActions);
+    
+    pthread_mutex_destroy(&lMem->listenerLock);
     pthread_exit(NULL);
 }
 
@@ -115,4 +128,21 @@ char *makeLogFilePathAndName(){
         return NULL;
     }
     return output;
+}
+
+void printListenerActions(Listener *lMem) {
+    LogAction *action;
+    printf("Recent Actions:\n");
+    TAILQ_FOREACH(action, &lMem->recentActions, entries) {
+        printLogAction(action);
+    }
+}
+
+int countListenerActions(Listener *lMem) {
+    int count = 0;
+    LogAction *action;
+    TAILQ_FOREACH(action, &lMem->recentActions, entries) {
+        count++;
+    }
+    return count;
 }

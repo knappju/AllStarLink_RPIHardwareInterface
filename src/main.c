@@ -5,11 +5,13 @@
 #include <sys/time.h>
 #include <time.h>
 #include <signal.h>
+#include <sys/queue.h>
 #include "hardwareManager.h"
 #include "Listener.h"
 #include "rb.h"
 #include "ASLNode.h"
 #include "globalDefines.h"
+
 
 //function defs
 void cleanUp(int signal_number);
@@ -30,7 +32,7 @@ typedef struct {
 
 // Global Vars
 volatile sig_atomic_t shutdownFlag = FALSE; //flag used by signal handler to indicate shutdown
-
+void printListenerActionAndDelete(Listener *lMem, LogAction *action);
 /* FUNCTION: main
  * DESC: Allocate memory and manage the threads in this program.
  *
@@ -85,7 +87,22 @@ int main()
 		pthread_mutex_lock(&app.hardware->hardwareLock);
 		app.hardware->leds[0].state = !app.hardware->leds[0].state;
 		pthread_mutex_unlock(&app.hardware->hardwareLock);
-		delay(200);
+		
+		if(app.listener->recentActions.tqh_first != NULL)
+		{
+			//print the  number of ListenerActions.
+			printf("Number of Listener Actions: %d\n", countListenerActions(app.listener));
+			//print the most recent action and delete it from the list until there are no more actions.
+			while(app.listener->recentActions.tqh_first != NULL)
+			{
+				printListenerActionAndDelete(app.listener, app.listener->recentActions.tqh_first);
+			}
+		}
+		else{
+			printf("No recent actions.\n");
+		}
+		
+		delay(1000);
 	}
 
 	//start the shutdown process for the threads.
@@ -111,4 +128,13 @@ int main()
 void cleanUp(int signal_number)
 {
 	shutdownFlag = TRUE;
+}
+
+void printListenerActionAndDelete(Listener *lMem, LogAction *action)
+{
+	printf("Action: %s, Name: %s, Last Update: %ld\n", action->action, action->name, action->LastUpdate);
+	pthread_mutex_lock(&lMem->listenerLock);
+	TAILQ_REMOVE(&lMem->recentActions, action, entries);
+	pthread_mutex_unlock(&lMem->listenerLock);
+	free(action);
 }
