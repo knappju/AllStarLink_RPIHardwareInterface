@@ -1,3 +1,4 @@
+
 #ifndef ASLNODE_H
 #define ASLNODE_H
 
@@ -13,5 +14,11 @@ typedef struct{
     bool txKey;
     uint8_t mode;
 } ASLNode;
+
+ASLNode *makeASLNode(char *name);
+int compareASLNode(const void *a, const void *b);
+void destroyASLNode(void *d);
+void printASLNode(void *d);
+
 
 #endif // ASLNODE_H

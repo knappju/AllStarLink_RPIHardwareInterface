@@ -7,6 +7,7 @@
 #include <signal.h>
 #include "hardwareManager.h"
 #include "Listener.h"
+#include "rb.h"
 #include "ASLNode.h"
 
 //function defs
@@ -16,14 +17,14 @@ void cleanUp(int signal_number);
 typedef struct{
 	Hardware hardware;
 	Listener listener;
-	ASLNode *nodes;
+	rbtree *nodeTree;
 } AppMemory;
 
 // structure for quick referencing pointers.
 typedef struct {
 	Hardware *hardware;
 	Listener *listener;
-	ASLNode *nodes;
+	rbtree *nodeTree;
 } App;
 
 // Global Vars
@@ -57,12 +58,22 @@ int main()
 		return -1; //memory allocation failed.
 	}
 
+	if((mem->nodeTree = rb_create(compareASLNode, destroyASLNode)) == NULL)
+	{
+		free(mem);
+		return -1; //memory allocation failed.
+	}
+
 	//connect memory to quick reference struct.
 	App app;
 	app.hardware = &mem->hardware;
 	app.listener = &mem->listener;
-	app.nodes = mem->nodes;
-	
+	app.nodeTree = mem->nodeTree;
+
+	//put MAIN Node in rbtree
+	ASLNode *mainNode = makeASLNode("MAIN");
+	rb_insert(app.nodeTree, mainNode);
+
 	//set up and kick off the hardware manager
 	initHardware(app.hardware);
 
@@ -85,8 +96,20 @@ int main()
 		gettimeofday(&currentTime, NULL);
 		pthread_mutex_lock(&app.hardware->hardwareLock);
 		app.hardware->leds[0].state = !app.hardware->leds[0].state;
+		if(!app.hardware->leds[0].state)
+		{
+			app.hardware->leds[1].state = !app.hardware->leds[1].state;
+		}
+		// if(!app.hardware->leds[1].state && !app.hardware->leds[0].state)
+		// {
+		// 	app.hardware->leds[2].state = !app.hardware->leds[2].state;
+		// }
+		// if(!app.hardware->leds[2].state && !app.hardware->leds[1].state && !app.hardware->leds[0].state)
+		// {
+		// 	app.hardware->leds[3].state = !app.hardware->leds[3].state;
+		// }
 		pthread_mutex_unlock(&app.hardware->hardwareLock);
-		delay(100);
+		delay(200);
 	}
 
 	app.hardware->halt = TRUE;
