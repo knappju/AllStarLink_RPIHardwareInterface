@@ -9,6 +9,7 @@
 #include "Listener.h"
 #include "rb.h"
 #include "ASLNode.h"
+#include "globalDefines.h"
 
 //function defs
 void cleanUp(int signal_number);
@@ -58,6 +59,7 @@ int main()
 		return -1; //memory allocation failed.
 	}
 
+	// create rbtree for nodes
 	if((mem->nodeTree = rb_create(compareASLNode, destroyASLNode)) == NULL)
 	{
 		free(mem);
@@ -74,53 +76,29 @@ int main()
 	ASLNode *mainNode = makeASLNode("MAIN");
 	rb_insert(app.nodeTree, mainNode);
 
-	//set up and kick off the hardware manager
+	//init and kick off threads.
 	initHardware(app.hardware);
-
-	//set up and kick off the listener
 	initListener(app.listener);
 
-	//testing for now, this keeps the program running for 24 hours.
-	struct timeval endTime;
-	struct timeval currentTime;
-
-	gettimeofday(&endTime, NULL);
-	gettimeofday(&currentTime, NULL);
-
-	endTime.tv_sec += 86400; //add 24 hours to the current time for the end time.
-
-	printf("ENDING TIME: %ld\n", endTime.tv_sec);
-
-	while((currentTime.tv_sec <= endTime.tv_sec) && !shutdownFlag)
+	while( !shutdownFlag)
 	{
-		gettimeofday(&currentTime, NULL);
 		pthread_mutex_lock(&app.hardware->hardwareLock);
 		app.hardware->leds[0].state = !app.hardware->leds[0].state;
-		if(!app.hardware->leds[0].state)
-		{
-			app.hardware->leds[1].state = !app.hardware->leds[1].state;
-		}
-		// if(!app.hardware->leds[1].state && !app.hardware->leds[0].state)
-		// {
-		// 	app.hardware->leds[2].state = !app.hardware->leds[2].state;
-		// }
-		// if(!app.hardware->leds[2].state && !app.hardware->leds[1].state && !app.hardware->leds[0].state)
-		// {
-		// 	app.hardware->leds[3].state = !app.hardware->leds[3].state;
-		// }
 		pthread_mutex_unlock(&app.hardware->hardwareLock);
 		delay(200);
 	}
 
+	//start the shutdown process for the threads.
 	app.hardware->halt = TRUE;
 	app.listener->halt = TRUE;
 
-	//wait for the hardware manager to finish cleaning.
+	//wait for the threads to finish before exiting the program.
 	pthread_join(app.hardware->id, NULL);
 	pthread_join(app.listener->id, NULL);
 
+	rb_destroy(app.nodeTree);
 	free(mem);
-
+	
 	return 0;
 }
 

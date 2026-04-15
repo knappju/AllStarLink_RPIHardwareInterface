@@ -7,16 +7,13 @@
 #include <sys/time.h>
 #include <time.h>
 #include <stdint.h>
+#include "globalDefines.h"
 
 // Defines
 #define HARDWARE_THREAD_TIME_MS 5
 #define BUTTON_STATE_UNDEFINED 0
 #define BUTTON_STATE_RELEASED 1
 #define BUTTON_STATE_PRESSED 2
-
-// Config vars - ///TODO: make a config.json or similar to easily pull out these values.
-#define NUM_OF_LEDS 4
-#define NUM_OF_BUTTONS 4
 
 // Public Hardware Structures
 //structure for a button

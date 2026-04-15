@@ -1,0 +1,9 @@
+#ifndef GLOBALDEFINES_H
+#define GLOBALDEFINES_H
+
+#define NUM_OF_LEDS 4
+#define NUM_OF_BUTTONS 4
+#define LOG_FILE_PATH "/var/log/asterisk/node_activity/443240"
+#define ACTION_FILTERS {"RXKEY", "TXKEY", "RXUNKEY", "TXUNKEY", "LINKTRX", "LINKLOCALMONITOR", "LINKDISC"}
+
+#endif // "GLOBALDEFINES_H"
