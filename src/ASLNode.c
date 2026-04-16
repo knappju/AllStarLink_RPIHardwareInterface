@@ -51,11 +51,8 @@ void printASLNode(void *d)
 
 	assert(node != NULL);
 	printf("-----------------------------------\n");
-	printf("Name: %s\n", node->name);
-	printf("Last Update: %ld\n", node->lastUpdate);
-	printf("RX Key: %s\n", node->rxKey ? "true" : "false");
-	printf("TX Key: %s\n", node->txKey ? "true" : "false");
-	printf("Mode: %u\n", node->mode);
+	printf("%-16s%16ld\n", node->name, node->lastUpdate);
+	printf("RX: %s TX: %s Mode: %u", node->rxKey ? "1" : "0", node->txKey ? "1" : "0", node->mode);
 	printf("-----------------------------------\n");
 }
 

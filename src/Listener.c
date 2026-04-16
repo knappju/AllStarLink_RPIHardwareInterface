@@ -58,7 +58,10 @@ void* listener(void* args)
     {
         //Open the log file and hold onto the handle.
         logFile = fopen(makeLogFilePathAndName() , "r");
-        if (!logFile)break;
+        if (!logFile){
+            usleep(1000000); // Sleep for 1 second before trying again if we can't open the file.
+            continue;
+        }
         fseek(logFile, currentLocation, SEEK_SET);
 
         // Keep reading until we hit the end of the file

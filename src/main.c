@@ -99,19 +99,34 @@ int main()
 			{
 				ASLNode *mainNode = node->data;
 				pthread_mutex_lock(&app.hardware->hardwareLock);
-				app.hardware->leds[0].state = mainNode->rxKey;
-				app.hardware->leds[1].state = mainNode->txKey;
+				app.hardware->leds[0].state = mainNode->txKey;
 				pthread_mutex_unlock(&app.hardware->hardwareLock);
 			}
-			node = rb_find(app.nodeTree, "2324");
+			node = rb_find(app.nodeTree, "2462");//Seattle
+			if(node != NULL)
+			{
+				ASLNode *mainNode = node->data;
+				pthread_mutex_lock(&app.hardware->hardwareLock);
+				app.hardware->leds[1].state = mainNode->rxKey;
+				pthread_mutex_unlock(&app.hardware->hardwareLock);
+			}
+			node = rb_find(app.nodeTree, "47185");//Detroit
 			if(node != NULL)
 			{
 				ASLNode *mainNode = node->data;
 				pthread_mutex_lock(&app.hardware->hardwareLock);
 				app.hardware->leds[2].state = mainNode->rxKey;
-				app.hardware->leds[3].state = mainNode->txKey;
 				pthread_mutex_unlock(&app.hardware->hardwareLock);
 			}
+			node = rb_find(app.nodeTree, "47243");//East Coast Reflector
+			if(node != NULL)
+			{
+				ASLNode *mainNode = node->data;
+				pthread_mutex_lock(&app.hardware->hardwareLock);
+				app.hardware->leds[3].state = mainNode->rxKey;
+				pthread_mutex_unlock(&app.hardware->hardwareLock);
+			}
+
 		}
 		
 		delay(10); //delay to prevent busy waiting.

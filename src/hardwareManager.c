@@ -147,19 +147,44 @@ int testLeds(Hardware *hwMem)
  * OUTPUTS: 0 for no errors.*/
 int buttonAction(int buttonIndex, uint8_t state)
 {
-	static bool toggle = TRUE;
-	if(state == BUTTON_STATE_PRESSED)
+	static bool toggle1 = TRUE;
+	static bool toggle2 = TRUE;
+	static bool toggle3 = TRUE;
+	if(buttonIndex == 1 && state == BUTTON_STATE_PRESSED)// seattle
 	{
-		if(toggle)
+		if(toggle1)
 		{
-			///TODO: Whenever this function is called, a function pointer should be added to the queue for an action to be taken. It should only do this if the queue is not protected by a mutex lock.
+			system("asterisk -rx \"rpt fun 443240 *32462\"");
+		}
+		else
+		{
+			system("asterisk -rx \"rpt fun 443240 *12462\"");
+		}
+		toggle1 = !toggle1;
+	}
+	if(buttonIndex == 2 && state == BUTTON_STATE_PRESSED)// detroit
+	{
+		if(toggle2)
+		{
+			system("asterisk -rx \"rpt fun 443240 *347185\"");
+		}
+		else
+		{
+			system("asterisk -rx \"rpt fun 443240 *147185\"");
+		}
+	toggle2 = !toggle2;
+	}
+	if(buttonIndex == 3 && state == BUTTON_STATE_PRESSED)// east coast reflector
+	{
+		if(toggle3)
+		{
 			system("asterisk -rx \"rpt fun 443240 *347243\"");
 		}
 		else
 		{
 			system("asterisk -rx \"rpt fun 443240 *147243\"");
 		}
-	toggle = !toggle;
+		toggle3 = !toggle3;
 	}
 	return 0;
 }
