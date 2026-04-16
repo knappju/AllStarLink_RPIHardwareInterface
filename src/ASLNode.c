@@ -11,7 +11,7 @@ ASLNode *makeASLNode(char *name)
 	if (p != NULL) {
 		strncpy(p->name, name, 16);
 		p->name[16] = '\0';
-		p->LastUpdate = 0;
+		p->lastUpdate = 0;
 		p->rxKey = false;
 		p->txKey = false;
 		p->mode = 0;
@@ -50,9 +50,33 @@ void printASLNode(void *d)
     node = (ASLNode *) d;
 
 	assert(node != NULL);
+	printf("-----------------------------------\n");
 	printf("Name: %s\n", node->name);
-	printf("Last Update: %ld\n", node->LastUpdate);
+	printf("Last Update: %ld\n", node->lastUpdate);
 	printf("RX Key: %s\n", node->rxKey ? "true" : "false");
 	printf("TX Key: %s\n", node->txKey ? "true" : "false");
 	printf("Mode: %u\n", node->mode);
+	printf("-----------------------------------\n");
+}
+
+void updateASLNode(ASLNode *node, long lastUpdate, const char*action)
+{
+	node->lastUpdate = lastUpdate;
+	if (strcmp(action, "RXKEY") == 0) {
+		node->rxKey = true;
+	} else if (strcmp(action, "RXUNKEY") == 0) {
+		node->rxKey = false;
+	} else if (strcmp(action, "TXKEY") == 0) {
+		node->txKey = true;
+	} else if (strcmp(action, "TXUNKEY") == 0) {
+		node->txKey = false;
+	} else if (strcmp(action, "LINKTRX") == 0) {
+		node->mode = 1; // Example mode for LINKTRX
+	} else if (strcmp(action, "LINKLOCALMONITOR") == 0) {
+		node->mode = 2; // Example mode for LINKLOCALMONITOR
+	} else if (strcmp(action, "LINKDISC") == 0) {
+		node->rxKey = false;
+		node->txKey = false;
+		node->mode = 0; // Example mode for LINKDISC
+	} 
 }

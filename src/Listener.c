@@ -82,7 +82,7 @@ void* listener(void* args)
             currentLocation = ftell(logFile); // Update for the next cycle
         }        
         fclose(logFile);
-        usleep(500000); // sleep for 500ms
+        usleep(5000); // sleep for 500ms
     }
 
     //delete all of the log actions in the list and free their memory.
@@ -106,8 +106,8 @@ void ParseLogAction(const char *logLine, LogAction *action) {
 }
 
 void printLogAction(const LogAction *action) {
-    printf("Time: %ld, Action: %s, Name: %s\n", action->LastUpdate, action->action, action->name);
-} 
+    printf("Name: %s, Action: %s, Time: %ld\n", action->name, action->action, action->LastUpdate);
+}
 
 char *makeLogFilePathAndName(){
     time_t t = time(NULL);

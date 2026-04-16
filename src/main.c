@@ -15,6 +15,7 @@
 
 //function defs
 void cleanUp(int signal_number);
+void findAndUpdateNodeForAction( rbtree *nodeTree, Listener *lMem, LogAction *action);
 
 // structure for app memory
 typedef struct{
@@ -32,7 +33,7 @@ typedef struct {
 
 // Global Vars
 volatile sig_atomic_t shutdownFlag = FALSE; //flag used by signal handler to indicate shutdown
-void printListenerActionAndDelete(Listener *lMem, LogAction *action);
+
 /* FUNCTION: main
  * DESC: Allocate memory and manage the threads in this program.
  *
@@ -84,25 +85,36 @@ int main()
 
 	while( !shutdownFlag)
 	{
-		pthread_mutex_lock(&app.hardware->hardwareLock);
-		app.hardware->leds[0].state = !app.hardware->leds[0].state;
-		pthread_mutex_unlock(&app.hardware->hardwareLock);
-		
 		if(app.listener->recentActions.tqh_first != NULL)
 		{
 			//print the  number of ListenerActions.
-			printf("Number of Listener Actions: %d\n", countListenerActions(app.listener));
+			//printf("Number of Listener Actions: %d\n", countListenerActions(app.listener));
 			//print the most recent action and delete it from the list until there are no more actions.
 			while(app.listener->recentActions.tqh_first != NULL)
 			{
-				printListenerActionAndDelete(app.listener, app.listener->recentActions.tqh_first);
+				findAndUpdateNodeForAction(app.nodeTree, app.listener, app.listener->recentActions.tqh_first);
+			}
+			rbnode *node = rb_find(app.nodeTree, "MAIN");
+			if(node != NULL)
+			{
+				ASLNode *mainNode = node->data;
+				pthread_mutex_lock(&app.hardware->hardwareLock);
+				app.hardware->leds[0].state = mainNode->rxKey;
+				app.hardware->leds[1].state = mainNode->txKey;
+				pthread_mutex_unlock(&app.hardware->hardwareLock);
+			}
+			node = rb_find(app.nodeTree, "2324");
+			if(node != NULL)
+			{
+				ASLNode *mainNode = node->data;
+				pthread_mutex_lock(&app.hardware->hardwareLock);
+				app.hardware->leds[2].state = mainNode->rxKey;
+				app.hardware->leds[3].state = mainNode->txKey;
+				pthread_mutex_unlock(&app.hardware->hardwareLock);
 			}
 		}
-		else{
-			printf("No recent actions.\n");
-		}
 		
-		delay(1000);
+		delay(10); //delay to prevent busy waiting.
 	}
 
 	//start the shutdown process for the threads.
@@ -130,9 +142,17 @@ void cleanUp(int signal_number)
 	shutdownFlag = TRUE;
 }
 
-void printListenerActionAndDelete(Listener *lMem, LogAction *action)
+void findAndUpdateNodeForAction( rbtree *nodeTree, Listener *lMem,LogAction *action)
 {
-	printf("Action: %s, Name: %s, Last Update: %ld\n", action->action, action->name, action->LastUpdate);
+	rbnode *node = rb_find(nodeTree, action->name);
+	
+	if (node != NULL) {
+		updateASLNode(node->data, action->LastUpdate, action->action);
+	} else {
+		ASLNode *newNode = makeASLNode(action->name);
+		updateASLNode(newNode, action->LastUpdate, action->action);
+		rb_insert(nodeTree, newNode);
+	}
 	pthread_mutex_lock(&lMem->listenerLock);
 	TAILQ_REMOVE(&lMem->recentActions, action, entries);
 	pthread_mutex_unlock(&lMem->listenerLock);

@@ -9,7 +9,7 @@
 // Structure for ASLNode
 typedef struct{
     char name[17]; // 16 chars plus null terminator.
-    long LastUpdate;
+    long lastUpdate;
     bool rxKey;
     bool txKey;
     uint8_t mode;
@@ -19,6 +19,7 @@ ASLNode *makeASLNode(char *name);
 int compareASLNode(const void *a, const void *b);
 void destroyASLNode(void *d);
 void printASLNode(void *d);
+void updateASLNode(ASLNode *node, long lastUpdate, const char* action);
 
 
 #endif // ASLNODE_H
