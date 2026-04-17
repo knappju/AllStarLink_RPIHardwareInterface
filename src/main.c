@@ -93,6 +93,7 @@ int main()
 			while(app.listener->recentActions.tqh_first != NULL)
 			{
 				findAndUpdateNodeForAction(app.nodeTree, app.listener, app.listener->recentActions.tqh_first);
+				
 			}
 			rbnode *node = rb_find(app.nodeTree, "MAIN");
 			if(node != NULL)

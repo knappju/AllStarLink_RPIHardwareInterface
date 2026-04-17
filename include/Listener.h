@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <sys/queue.h>
 #include "globalDefines.h"
+#include "sys/stat.h"
 
 #define LISTENER_THREAD_TIME_MS 250
 #define FILE_FIRST_READ_STARTING_LINE_OFFSET 25
@@ -31,6 +32,7 @@ typedef struct{
     pthread_mutex_t listenerLock;
 	bool halt;
     struct tailhead recentActions;
+    int queueSize;
 } Listener;
 
 // Public Functions

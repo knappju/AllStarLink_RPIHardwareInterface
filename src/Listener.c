@@ -1,11 +1,12 @@
 #include "Listener.h"
 
+#define MAX_QUEUE_SIZE 1000
 const char *logActionFilter[] = ACTION_FILTERS;
 
 // private functions
 void ParseLogAction(const char *logLine, LogAction *action);
 void printLogAction(const LogAction *action);   
-char *makeLogFilePathAndName();
+void makeLogFilePathAndName(char *output, size_t size);
 
 /* FUNCTION: initListener
  * DESC: Used to initialize the listener thread and related variables.
@@ -27,80 +28,130 @@ int initListener(Listener *lMem)
 
 void* listener(void* args)
 {
-    long fileLinesAtStart;
-    long currentLocation;
-    FILE *logFile;
-    char buffer[256];
-
-    if(args == NULL)
-    {
+    if (args == NULL) {
         pthread_exit(NULL);
     }
 
     Listener *lMem = (Listener *)args;
+    FILE *logFile = NULL;
+    char buffer[256];
+    char currentPath[80] = {0};
+    char newPath[80] = {0};
+    long currentLocation = 0;
+
     TAILQ_INIT(&lMem->recentActions);
 
-    //find a good spot to start reading.
-    logFile = fopen(makeLogFilePathAndName(), "r");
-    if (!logFile)    {
-        printf("Error opening log file: %s\n", makeLogFilePathAndName());
-        pthread_exit(NULL);
+    makeLogFilePathAndName(currentPath, sizeof(currentPath));
+    logFile = fopen(currentPath, "r");
+    if (logFile) {
+        fseek(logFile, 0, SEEK_END);
+        long fileSize = ftell(logFile);
+        currentLocation = fileSize - FILE_FIRST_READ_STARTING_LINE_OFFSET * FILE_LINE_CHAR_SIZE_MAX;
+        if (currentLocation < 0) currentLocation = 0;
+        fseek(logFile, currentLocation, SEEK_SET);
+        fgets(buffer, sizeof(buffer), logFile);
+        currentLocation = ftell(logFile);
     }
 
-    fseek(logFile, 0, SEEK_END);
-    fileLinesAtStart = ftell(logFile);
-    currentLocation = fileLinesAtStart - FILE_FIRST_READ_STARTING_LINE_OFFSET * FILE_LINE_CHAR_SIZE_MAX;
-    if(currentLocation < 0) currentLocation = 0;
-    fgets(buffer, sizeof(buffer), logFile); // Clear the buffer for the first read.
-    fclose(logFile);
-
-    while(!lMem->halt)
+    while (!lMem->halt)
     {
-        //Open the log file and hold onto the handle.
-        logFile = fopen(makeLogFilePathAndName() , "r");
-        if (!logFile){
-            usleep(1000000); // Sleep for 1 second before trying again if we can't open the file.
-            continue;
+        makeLogFilePathAndName(newPath, sizeof(newPath));
+        if (strcmp(currentPath, newPath) != 0) {
+            printf("Log rotated: %s -> %s\n", currentPath, newPath);
+            if (logFile) {
+                fclose(logFile);
+                logFile = NULL;
+            }
+            strcpy(currentPath, newPath);
+            currentLocation = 0;
         }
-        fseek(logFile, currentLocation, SEEK_SET);
 
-        // Keep reading until we hit the end of the file
-        while ((fgets(buffer, sizeof(buffer), logFile) != NULL) && !lMem->halt) {
-            // search the line for the action types we care about. If we find one, parse it and add it to the list of recent actions.
-            for(int i = 0; i < sizeof(logActionFilter)/sizeof(logActionFilter[0]); i++)
+        if (!logFile) {
+            logFile = fopen(currentPath, "r");
+            if (!logFile) {
+                usleep(500000); // wait 500ms
+                continue;
+            }
+        }
+
+        struct stat st;
+        if (stat(currentPath, &st) == 0) {
+            if (st.st_size < currentLocation) {
+                printf("Log truncated, resetting position\n");
+                currentLocation = 0;
+            }
+        }
+
+        fseek(logFile, currentLocation, SEEK_SET);
+        TAILQ_HEAD(tempHead, LogAction) tempList;
+        TAILQ_INIT(&tempList);
+        while (fgets(buffer, sizeof(buffer), logFile) != NULL && !lMem->halt)
+        {
+            for (int i = 0; i < sizeof(logActionFilter)/sizeof(logActionFilter[0]); i++)
             {
-                if(strstr(buffer, logActionFilter[i]) != NULL)
-                {                 
+                if (strstr(buffer, logActionFilter[i]) != NULL)
+                {
                     LogAction* newAction = malloc(sizeof(LogAction));
-                    if (newAction == NULL) {
-                        printf("Memory allocation failed for new log action.\n");
-                        continue; // Skip this action if we can't allocate memory.
+                    if (!newAction) {
+                        printf("Memory allocation failed.\n");
+                        break;
                     }
+
                     ParseLogAction(buffer, newAction);
-                    pthread_mutex_lock(&lMem->listenerLock);
-                    TAILQ_INSERT_TAIL(&lMem->recentActions, newAction, entries);
-                    pthread_mutex_unlock(&lMem->listenerLock);
+                    TAILQ_INSERT_TAIL(&tempList, newAction, entries);
+                    break;
                 }
             }
-            currentLocation = ftell(logFile); // Update for the next cycle
-        }        
-        fclose(logFile);
-        usleep(5000); // sleep for 500ms
+
+            currentLocation = ftell(logFile);
+        }
+
+        if (!TAILQ_EMPTY(&tempList)) {
+            pthread_mutex_lock(&lMem->listenerLock);
+
+            LogAction *action;
+            while (!TAILQ_EMPTY(&tempList)) {
+                action = TAILQ_FIRST(&tempList);
+                TAILQ_REMOVE(&tempList, action, entries);
+
+                TAILQ_INSERT_TAIL(&lMem->recentActions, action, entries);
+
+                // Optional: prevent unbounded growth
+                if (lMem->queueSize >= MAX_QUEUE_SIZE) {
+                    LogAction *oldest = TAILQ_FIRST(&lMem->recentActions);
+                    if (oldest) {
+                        TAILQ_REMOVE(&lMem->recentActions, oldest, entries);
+                        free(oldest);
+                        lMem->queueSize--;
+                    }
+                }
+
+                lMem->queueSize++;
+            }
+
+            pthread_mutex_unlock(&lMem->listenerLock);
+        }
+
+        if (feof(logFile)) {
+            clearerr(logFile);
+            usleep(100000); // 100ms
+        }
     }
 
-    //delete all of the log actions in the list and free their memory.
-    LogAction *action;
+    if (logFile) {
+        fclose(logFile);
+    }
     pthread_mutex_lock(&lMem->listenerLock);
+
+    LogAction *action;
     while (!TAILQ_EMPTY(&lMem->recentActions)) {
         action = TAILQ_FIRST(&lMem->recentActions);
         TAILQ_REMOVE(&lMem->recentActions, action, entries);
         free(action);
     }
+
     pthread_mutex_unlock(&lMem->listenerLock);
 
-    TAILQ_INIT(&lMem->recentActions);
-    
-    pthread_mutex_destroy(&lMem->listenerLock);
     pthread_exit(NULL);
 }
 
@@ -112,25 +163,17 @@ void printLogAction(const LogAction *action) {
     printf("Name: %s, Action: %s, Time: %ld\n", action->name, action->action, action->LastUpdate);
 }
 
-char *makeLogFilePathAndName(){
+void makeLogFilePathAndName(char *output, size_t size)
+{
     time_t t = time(NULL);
-    struct tm *tm_info = localtime(&t);
-    char *output = malloc(80);
-    if (output == NULL) {
-        return NULL; // Handle allocation failure
-    }
-    // Use snprintf to safely format the entire path
-    int len = snprintf(output, 80, "%s/%04d%02d%02d.txt", 
-                       LOG_FILE_PATH, 
-                       tm_info->tm_year + 1900, 
-                       tm_info->tm_mon + 1, 
-                       tm_info->tm_mday);
-    // Check if the buffer was large enough
-    if (len < 0 || len >= 80) {
-        free(output);
-        return NULL;
-    }
-    return output;
+    struct tm tm_info;
+    localtime_r(&t, &tm_info);
+
+    snprintf(output, size, "%s/%04d%02d%02d.txt",
+             LOG_FILE_PATH,
+             tm_info.tm_year + 1900,
+             tm_info.tm_mon + 1,
+             tm_info.tm_mday);
 }
 
 void printListenerActions(Listener *lMem) {

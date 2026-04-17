@@ -52,12 +52,14 @@ void printASLNode(void *d)
 	assert(node != NULL);
 	printf("-----------------------------------\n");
 	printf("%-16s%16ld\n", node->name, node->lastUpdate);
-	printf("RX: %s TX: %s Mode: %u", node->rxKey ? "1" : "0", node->txKey ? "1" : "0", node->mode);
+	printf("RX: %s TX: %s Mode: %u\n", node->rxKey ? "1" : "0", node->txKey ? "1" : "0", node->mode);
 	printf("-----------------------------------\n");
 }
 
 void updateASLNode(ASLNode *node, long lastUpdate, const char*action)
 {
+	// print the node, and action
+	
 	node->lastUpdate = lastUpdate;
 	if (strcmp(action, "RXKEY") == 0) {
 		node->rxKey = true;
