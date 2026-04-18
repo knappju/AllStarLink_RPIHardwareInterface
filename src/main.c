@@ -41,6 +41,7 @@ volatile sig_atomic_t shutdownFlag = FALSE; //flag used by signal handler to ind
  * OUTPUTS:*/
 int main()
 {
+	int counter = 0;
 	//set up signal handler to allow for graceful shutdown of the program.
 	struct sigaction sigterm_action = { 
     	.sa_handler = cleanUp 
@@ -129,8 +130,17 @@ int main()
 			}
 
 		}
+		counter++;
+		if(counter >= 100){
+			counter = 0;
+			pthread_mutex_lock(&app.hardware->hardwareLock);
+			app.hardware->leds[4].state = !app.hardware->leds[4].state;
+			pthread_mutex_unlock(&app.hardware->hardwareLock);
+		}
+		app.hardware->leds[6].state = app.listener->heartbeat;
 		
 		delay(10); //delay to prevent busy waiting.
+		
 	}
 
 	//start the shutdown process for the threads.

@@ -20,6 +20,7 @@ int initListener(Listener *lMem)
     if(lMem == NULL) return -1;
 
     lMem->halt = false;
+    lMem->heartbeat = false;
     pthread_mutex_init(&lMem->listenerLock,NULL);
     pthread_create(&lMem->id,NULL,listener,lMem);
 
@@ -70,6 +71,7 @@ void* listener(void* args)
             logFile = fopen(currentPath, "r");
             if (!logFile) {
                 usleep(500000); // wait 500ms
+                lMem->heartbeat = true;
                 continue;
             }
         }
@@ -136,6 +138,7 @@ void* listener(void* args)
             clearerr(logFile);
             usleep(100000); // 100ms
         }
+        lMem->heartbeat = !lMem->heartbeat;
     }
 
     if (logFile) {
@@ -151,7 +154,7 @@ void* listener(void* args)
     }
 
     pthread_mutex_unlock(&lMem->listenerLock);
-
+    lMem->heartbeat = true;
     pthread_exit(NULL);
 }
 

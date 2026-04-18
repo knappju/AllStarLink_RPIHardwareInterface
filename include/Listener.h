@@ -33,6 +33,7 @@ typedef struct{
 	bool halt;
     struct tailhead recentActions;
     int queueSize;
+    bool heartbeat;
 } Listener;
 
 // Public Functions

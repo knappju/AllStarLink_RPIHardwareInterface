@@ -1,7 +1,7 @@
 #include "hardwareManager.h"
 
 // Config vars - ///TODO: make a config.json or similar to easily pull out these values.
-int defineLeds[NUM_OF_LEDS] = {1,4,5,6};
+int defineLeds[NUM_OF_LEDS] = {1,4,5,6,26,27,28};
 int defineButtons[NUM_OF_BUTTONS] = {7,0,2,3};
 
 // Private Functions
@@ -20,6 +20,7 @@ long currentMillis();
  * OUTPUTS: null is returned*/
 void* hardwareManager(void* args)
 {
+	int counter = 0;
 	if(args == NULL)
 	{
 		pthread_exit(NULL);
@@ -68,6 +69,11 @@ void* hardwareManager(void* args)
 				digitalWrite(hwMem->leds[ledIndex].pin, hwMem->leds[ledIndex].state);
 			}
 			pthread_mutex_unlock(&hwMem->hardwareLock);
+		}
+		counter++;
+		if(counter >= 1000){
+			counter = 0;
+			hwMem->leds[5].state = !hwMem->leds[5].state;
 		}
 	}
 	cleanHardware(hwMem);
