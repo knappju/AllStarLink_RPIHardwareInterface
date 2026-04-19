@@ -20,7 +20,6 @@ long currentMillis();
  * OUTPUTS: null is returned*/
 void* hardwareManager(void* args)
 {
-	int counter = 0;
 	if(args == NULL)
 	{
 		pthread_exit(NULL);
@@ -69,11 +68,6 @@ void* hardwareManager(void* args)
 				digitalWrite(hwMem->leds[ledIndex].pin, hwMem->leds[ledIndex].state);
 			}
 			pthread_mutex_unlock(&hwMem->hardwareLock);
-		}
-		counter++;
-		if(counter >= 1000){
-			counter = 0;
-			hwMem->leds[5].state = !hwMem->leds[5].state;
 		}
 	}
 	cleanHardware(hwMem);
@@ -156,6 +150,7 @@ int buttonAction(int buttonIndex, uint8_t state)
 	static bool toggle1 = TRUE;
 	static bool toggle2 = TRUE;
 	static bool toggle3 = TRUE;
+	static bool toggle4 = TRUE;
 	if(buttonIndex == 1 && state == BUTTON_STATE_PRESSED)// seattle
 	{
 		if(toggle1)
@@ -184,13 +179,25 @@ int buttonAction(int buttonIndex, uint8_t state)
 	{
 		if(toggle3)
 		{
-			system("asterisk -rx \"rpt fun 443240 *347243\"");
+			system("asterisk -rx \"rpt fun 443240 *327339\"");
 		}
 		else
 		{
-			system("asterisk -rx \"rpt fun 443240 *147243\"");
+			system("asterisk -rx \"rpt fun 443240 *127339\"");
 		}
 		toggle3 = !toggle3;
+	}
+	if(buttonIndex == 4 && state == BUTTON_STATE_PRESSED)// west coast reflector
+	{
+		if(toggle4)
+		{
+			system("asterisk -rx \"rpt fun 443240 *327343\"");
+		}
+		else
+		{
+			system("asterisk -rx \"rpt fun 443240 *127343\"");
+		}
+		toggle4 = !toggle4;
 	}
 	return 0;
 }

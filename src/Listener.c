@@ -7,7 +7,6 @@ const char *logActionFilter[] = ACTION_FILTERS;
 void ParseLogAction(const char *logLine, LogAction *action);
 void printLogAction(const LogAction *action);   
 void makeLogFilePathAndName(char *output, size_t size);
-void addFakeListenerAction(Listener *lMem, const char *name, const char *actionStr);
 
 /* FUNCTION: initListener
  * DESC: Used to initialize the listener thread and related variables.
@@ -21,7 +20,6 @@ int initListener(Listener *lMem)
     if(lMem == NULL) return -1;
 
     lMem->halt = false;
-    lMem->heartbeat = false;
     pthread_mutex_init(&lMem->listenerLock,NULL);
     pthread_create(&lMem->id,NULL,listener,lMem);
 
@@ -30,7 +28,6 @@ int initListener(Listener *lMem)
 
 void* listener(void* args)
 {
-    int counter = 0;
     if (args == NULL) {
         pthread_exit(NULL);
     }
@@ -73,8 +70,6 @@ void* listener(void* args)
             logFile = fopen(currentPath, "r");
             if (!logFile) {
                 usleep(500000); // wait 500ms
-                lMem->heartbeat = true;
-                printf("Waiting for log file: %s\n", currentPath);
                 continue;
             }
         }
@@ -120,37 +115,23 @@ void* listener(void* args)
                 TAILQ_REMOVE(&tempList, action, entries);
 
                 TAILQ_INSERT_TAIL(&lMem->recentActions, action, entries);
+                lMem->queueSize++;
 
-                //Optional: prevent unbounded growth
                 if (lMem->queueSize >= MAX_QUEUE_SIZE) {
                     LogAction *oldest = TAILQ_FIRST(&lMem->recentActions);
                     if (oldest) {
                         TAILQ_REMOVE(&lMem->recentActions, oldest, entries);
                         free(oldest);
                         lMem->queueSize--;
-                        printf("Queue size exceeded limit. Oldest action removed.\n");
                     }
                 }
-
-                lMem->queueSize++;
-                printf("Percent of action queue filled: %.2f%%\n", (double)lMem->queueSize / MAX_QUEUE_SIZE * 100);
             }
-
             pthread_mutex_unlock(&lMem->listenerLock);
         }
 
         if (feof(logFile)) {
             clearerr(logFile);
             usleep(100000); // 100ms
-        }
-        lMem->heartbeat = !lMem->heartbeat;
-        counter++;
-        if(counter == 10){
-            addFakeListenerAction(lMem, "47185", "RXKEY");
-        }
-        if(counter >= 20){
-            counter = 0;
-            addFakeListenerAction(lMem, "47185", "RXUNKEY");
         }
     }
 
@@ -165,9 +146,7 @@ void* listener(void* args)
         TAILQ_REMOVE(&lMem->recentActions, action, entries);
         free(action);
     }
-
     pthread_mutex_unlock(&lMem->listenerLock);
-    lMem->heartbeat = true;
     pthread_exit(NULL);
 }
 
@@ -207,23 +186,4 @@ int countListenerActions(Listener *lMem) {
         count++;
     }
     return count;
-}
-
-void addFakeListenerAction(Listener *lMem, const char *name, const char *actionStr) {
-
-    printf("Adding fake action: Name: %s, Action: %s\n", name, actionStr);
-    LogAction *newAction = malloc(sizeof(LogAction));
-    if (!newAction) {
-        printf("Memory allocation failed.\n");
-        return;
-    }
-
-    newAction->LastUpdate = time(NULL);
-    strncpy(newAction->name, name, sizeof(newAction->name) - 1);
-    strncpy(newAction->action, actionStr, sizeof(newAction->action) - 1);
-
-    pthread_mutex_lock(&lMem->listenerLock);
-    TAILQ_INSERT_TAIL(&lMem->recentActions, newAction, entries);
-    pthread_mutex_unlock(&lMem->listenerLock);
-    lMem->queueSize++;
 }

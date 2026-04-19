@@ -41,7 +41,6 @@ volatile sig_atomic_t shutdownFlag = FALSE; //flag used by signal handler to ind
  * OUTPUTS:*/
 int main()
 {
-	int counter = 0;
 	//set up signal handler to allow for graceful shutdown of the program.
 	struct sigaction sigterm_action = { 
     	.sa_handler = cleanUp 
@@ -120,7 +119,7 @@ int main()
 				app.hardware->leds[2].state = mainNode->rxKey;
 				pthread_mutex_unlock(&app.hardware->hardwareLock);
 			}
-			node = rb_find(app.nodeTree, "47243");//East Coast Reflector
+			node = rb_find(app.nodeTree, "27339");//East Coast Reflector
 			if(node != NULL)
 			{
 				ASLNode *mainNode = node->data;
@@ -130,17 +129,7 @@ int main()
 			}
 
 		}
-		counter++;
-		if(counter >= 100){
-			counter = 0;
-			pthread_mutex_lock(&app.hardware->hardwareLock);
-			app.hardware->leds[4].state = !app.hardware->leds[4].state;
-			pthread_mutex_unlock(&app.hardware->hardwareLock);
-		}
-		app.hardware->leds[6].state = app.listener->heartbeat;
-		
-		delay(10); //delay to prevent busy waiting.
-		
+		usleep(10000); //delay to prevent busy waiting.
 	}
 
 	//start the shutdown process for the threads.
@@ -173,10 +162,8 @@ void findAndUpdateNodeForAction( rbtree *nodeTree, Listener *lMem,LogAction *act
 	rbnode *node = rb_find(nodeTree, action->name);
 	
 	if (node != NULL) {
-		printf("Time: %lu Updating Node: %s, Action: %s\n", (unsigned long)time(NULL), action->name, action->action);
 		updateASLNode(node->data, action->LastUpdate, action->action);
 	} else {
-		printf("Time: %lu Adding Node: %s, Action: %s\n", (unsigned long)time(NULL), action->name, action->action);
 		ASLNode *newNode = makeASLNode(action->name);
 		updateASLNode(newNode, action->LastUpdate, action->action);
 		rb_insert(nodeTree, newNode);
@@ -184,7 +171,6 @@ void findAndUpdateNodeForAction( rbtree *nodeTree, Listener *lMem,LogAction *act
 	pthread_mutex_lock(&lMem->listenerLock);
 	TAILQ_REMOVE(&lMem->recentActions, action, entries);
 	lMem->queueSize--;
-	printf("Time: %lu Remaining Actions: %d\n", (unsigned long)time(NULL), lMem->queueSize);
 	pthread_mutex_unlock(&lMem->listenerLock);
 	free(action);
 }
