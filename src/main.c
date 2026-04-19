@@ -173,14 +173,18 @@ void findAndUpdateNodeForAction( rbtree *nodeTree, Listener *lMem,LogAction *act
 	rbnode *node = rb_find(nodeTree, action->name);
 	
 	if (node != NULL) {
+		printf("Time: %lu Updating Node: %s, Action: %s\n", (unsigned long)time(NULL), action->name, action->action);
 		updateASLNode(node->data, action->LastUpdate, action->action);
 	} else {
+		printf("Time: %lu Adding Node: %s, Action: %s\n", (unsigned long)time(NULL), action->name, action->action);
 		ASLNode *newNode = makeASLNode(action->name);
 		updateASLNode(newNode, action->LastUpdate, action->action);
 		rb_insert(nodeTree, newNode);
 	}
 	pthread_mutex_lock(&lMem->listenerLock);
 	TAILQ_REMOVE(&lMem->recentActions, action, entries);
+	lMem->queueSize--;
+	printf("Time: %lu Remaining Actions: %d\n", (unsigned long)time(NULL), lMem->queueSize);
 	pthread_mutex_unlock(&lMem->listenerLock);
 	free(action);
 }
