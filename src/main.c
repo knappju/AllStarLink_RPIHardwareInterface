@@ -108,15 +108,17 @@ int main()
 			{
 				ASLNode *mainNode = node->data;
 				pthread_mutex_lock(&app.hardware->hardwareLock);
-				app.hardware->leds[1].state = mainNode->rxKey;
+				app.hardware->leds[1].state = mainNode->mode >= 1 ? TRUE : FALSE;
+				app.hardware->leds[2].state = mainNode->rxKey;
 				pthread_mutex_unlock(&app.hardware->hardwareLock);
 			}
-			node = rb_find(app.nodeTree, "47185");//Detroit
+			node = rb_find(app.nodeTree, "472440");//W8IRA
 			if(node != NULL)
 			{
 				ASLNode *mainNode = node->data;
 				pthread_mutex_lock(&app.hardware->hardwareLock);
-				app.hardware->leds[2].state = mainNode->rxKey;
+				app.hardware->leds[3].state = mainNode->mode >= 1 ? TRUE : FALSE;
+				app.hardware->leds[4].state = mainNode->rxKey;
 				pthread_mutex_unlock(&app.hardware->hardwareLock);
 			}
 			node = rb_find(app.nodeTree, "27339");//East Coast Reflector
@@ -124,7 +126,8 @@ int main()
 			{
 				ASLNode *mainNode = node->data;
 				pthread_mutex_lock(&app.hardware->hardwareLock);
-				app.hardware->leds[3].state = mainNode->rxKey;
+				app.hardware->leds[5].state = mainNode->mode >= 1 ? TRUE : FALSE;
+				app.hardware->leds[6].state = mainNode->rxKey;
 				pthread_mutex_unlock(&app.hardware->hardwareLock);
 			}
 

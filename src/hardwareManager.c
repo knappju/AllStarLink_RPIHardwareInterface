@@ -163,15 +163,15 @@ int buttonAction(int buttonIndex, uint8_t state)
 		}
 		toggle1 = !toggle1;
 	}
-	if(buttonIndex == 2 && state == BUTTON_STATE_PRESSED)// detroit
+	if(buttonIndex == 2 && state == BUTTON_STATE_PRESSED)// W8IRA
 	{
 		if(toggle2)
 		{
-			system("asterisk -rx \"rpt fun 443240 *347185\"");
+			system("asterisk -rx \"rpt fun 443240 *3472440\"");
 		}
 		else
 		{
-			system("asterisk -rx \"rpt fun 443240 *147185\"");
+			system("asterisk -rx \"rpt fun 443240 *1472440\"");
 		}
 	toggle2 = !toggle2;
 	}
@@ -187,18 +187,18 @@ int buttonAction(int buttonIndex, uint8_t state)
 		}
 		toggle3 = !toggle3;
 	}
-	if(buttonIndex == 4 && state == BUTTON_STATE_PRESSED)// west coast reflector
-	{
-		if(toggle4)
-		{
-			system("asterisk -rx \"rpt fun 443240 *327343\"");
-		}
-		else
-		{
-			system("asterisk -rx \"rpt fun 443240 *127343\"");
-		}
-		toggle4 = !toggle4;
-	}
+	// if(buttonIndex == 4 && state == BUTTON_STATE_PRESSED)// west coast reflector
+	// {
+	// 	if(toggle4)
+	// 	{
+	// 		system("asterisk -rx \"rpt fun 443240 *347243\"");
+	// 	}
+	// 	else
+	// 	{
+	// 		system("asterisk -rx \"rpt fun 443240 *147243\"");
+	// 	}
+	// 	toggle4 = !toggle4;
+	// }
 	return 0;
 }
 
