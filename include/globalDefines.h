@@ -1,6 +1,8 @@
 #ifndef GLOBALDEFINES_H
 #define GLOBALDEFINES_H
 
+#define SOFTWARE_REVISION_NUMBER "0.1.0.0"
+
 #define NUM_OF_LEDS 7
 #define NUM_OF_BUTTONS 4
 #define LOG_FILE_PATH "/var/log/asterisk/node_activity/443240"
