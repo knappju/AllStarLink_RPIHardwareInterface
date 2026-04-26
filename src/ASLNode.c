@@ -11,10 +11,12 @@ ASLNode *makeASLNode(char *name)
 	if (p != NULL) {
 		strncpy(p->name, name, 16);
 		p->name[16] = '\0';
+		strncpy(p->friendlyName, "noname\0",33);
 		p->lastUpdate = 0;
 		p->rxKey = false;
 		p->txKey = false;
 		p->mode = 0;
+		p->desiredChannelNumber = 255;
 	}
 	return p;
 }

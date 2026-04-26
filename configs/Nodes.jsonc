@@ -2,7 +2,7 @@
     {
         "node": "MAIN",
         "friendlyname": "MAIN",
-        "channelnumber": 0,
+        "desiredchannelnumber": 0,
         "shedule":
         [
             {
@@ -18,7 +18,7 @@
     {
         "node": "2462",
         "friendlyname": "WW7PSR",
-        "channelnumber": 1,
+        "desiredchannelnumber": 1,
         "shedule":
         [
             {

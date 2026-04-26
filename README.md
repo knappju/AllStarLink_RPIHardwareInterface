@@ -6,6 +6,9 @@ README UNDER CONTRUCTION
 ### Build and Install WiringPi Library
 TBD .... Need to add instructions for this.
 
+### Need to get libcjson-dev
+sudo apt-get install libcjson-dev
+
 ### Enable activity logging
 1. Open you configuration file: 
 ```

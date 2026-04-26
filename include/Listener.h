@@ -18,7 +18,7 @@
 #define FILE_FIRST_READ_STARTING_LINE_OFFSET 25
 #define FILE_LINE_CHAR_SIZE_MAX 48
 
-TAILQ_HEAD(tailhead, LogAction);
+TAILQ_HEAD(logHead, LogAction);
 
 typedef struct LogAction{
     char name[17]; // 16 chars plus null terminator.
@@ -31,7 +31,7 @@ typedef struct{
     pthread_t id;
     pthread_mutex_t listenerLock;
 	bool halt;
-    struct tailhead recentActions;
+    struct logHead recentActions;
     int queueSize;
 } Listener;
 
