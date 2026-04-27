@@ -3,6 +3,12 @@
 #include <assert.h>
 #include "ASLNode.h"
 
+
+/* FUNCTION: makeASLNode
+ * DESC: A constructor that creates and returns an ASLNode. 
+ *
+ * INPUTS:
+ * OUTPUTS:*/
 ASLNode *makeASLNode(char *name)
 {
 	ASLNode *p;
@@ -11,12 +17,13 @@ ASLNode *makeASLNode(char *name)
 	if (p != NULL) {
 		strncpy(p->name, name, 16);
 		p->name[16] = '\0';
-		strncpy(p->friendlyName, "noname\0",33);
+		strncpy(p->friendlyName, "nofriendlyname\0",33);
 		p->lastUpdate = 0;
 		p->rxKey = false;
 		p->txKey = false;
 		p->mode = 0;
 		p->desiredChannelNumber = 255;
+		TAILQ_INIT(&p->schedule);
 	}
 	return p;
 }
@@ -40,7 +47,42 @@ void destroyASLNode(void *d)
     assert(d != NULL);
 
     node = (ASLNode *) d;
+
+	emptyASLNodeSchedule(node);
+
 	free(node);
+}
+
+void emptyASLNodeSchedule(void *d){
+	ASLNode *node;
+    
+    assert(d != NULL);
+
+    node = (ASLNode *) d;
+	
+	scheduleItem *tempSchedule;
+	while (!TAILQ_EMPTY(&node->schedule)){
+        tempSchedule = TAILQ_FIRST(&node->schedule);
+        TAILQ_REMOVE(&node->schedule, tempSchedule, entries);
+        free(tempSchedule);
+    }
+}
+
+void addScheduleItem(ASLNode *node, char* netName, long startUTCWeekTimeInSeconds, 
+						long endUTCWeekTimeInSeconds, uint8_t mode, uint8_t priority){
+	scheduleItem *p;
+
+	p = (scheduleItem *) malloc(sizeof(scheduleItem));
+	if (p != NULL && node != NULL) {
+		p->owner = node;
+		strncpy(p->netName, netName, 33);
+		p->netName[33] = '\0';
+		p->startUTCWeekTimeInSeconds = startUTCWeekTimeInSeconds;
+		p->endUTCWeekTimeInSeconds = endUTCWeekTimeInSeconds;
+		p->mode = mode;
+		p->priority = priority;
+		TAILQ_INSERT_TAIL(&node->schedule,p,entries);
+	}
 }
 
 void printASLNode(void *d)

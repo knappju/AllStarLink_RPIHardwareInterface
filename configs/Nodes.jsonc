@@ -1,21 +1,5 @@
 [
     {
-        "node": "MAIN",
-        "friendlyname": "MAIN",
-        "desiredchannelnumber": 0,
-        "shedule":
-        [
-            {
-                "utcstartdayofweek" : "sunday",
-                "utcstart" : "00:00",
-                "utcenddayofweek": "saturday",
-                "utcend" : "23:59",
-                "mode" : "transceive",
-                "priority" : 1
-            }
-        ]
-    },
-    {
         "node": "2462",
         "friendlyname": "WW7PSR",
         "desiredchannelnumber": 1,

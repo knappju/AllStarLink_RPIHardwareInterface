@@ -36,6 +36,9 @@ int compareASLNode(const void *a, const void *b);
 void destroyASLNode(void *d);
 void printASLNode(void *d);
 void updateASLNode(ASLNode *node, long lastUpdate, const char* action);
+void emptyASLNodeSchedule(void *d);
+void addScheduleItem(ASLNode *node, char* netName, long startUTCWeekTimeInSeconds, 
+						long endUTCWeekTimeInSeconds, uint8_t mode, uint8_t priority);
 
 
 #endif // ASLNODE_H
