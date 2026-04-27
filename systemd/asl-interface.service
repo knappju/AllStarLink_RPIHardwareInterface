@@ -1,0 +1,11 @@
+[Unit]
+Description=AllStarLink Interface Service
+ConditionPathExists=/usr/bin/asl-interface
+
+[Service]
+ExecStart=/usr/bin/asl-interface
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target   

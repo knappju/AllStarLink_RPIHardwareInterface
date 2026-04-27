@@ -3,11 +3,7 @@
 README UNDER CONTRUCTION
 
 ## Prerequisites
-### Build and Install WiringPi Library
-TBD .... Need to add instructions for this.
-
-### Need to get libcjson-dev
-sudo apt-get install libcjson-dev
+### 
 
 ### Enable activity logging
 1. Open you configuration file: 
@@ -29,6 +25,10 @@ sudo chmod 755 /var/log/asterisk/node_activity/
 ```
 tail -f /var/log/asterisk/node_activity/443240/$(date +%Y%m%d).txt | grep -E "RXKEY|TXKEY|RXUNKEY|TXUNKEY"
 ```
+
+### Build
+
+Requires sudo. Outputs executable to /usr/bin/asl-interface. This will install required libraries if they aren't already installed.
 
 ## Acknowledgments
 * **Xie Qing** - *xieqing* - [red-black-tree](https://github.com/xieqing/red-black-tree)
