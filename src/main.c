@@ -7,7 +7,7 @@
 #include <signal.h>
 #include <sys/queue.h>
 #include "hardwareManager.h"
-#include "Listener.h"
+#include "listener.h"
 #include "rb.h"
 #include "ASLNode.h"
 #include "globalDefines.h"
