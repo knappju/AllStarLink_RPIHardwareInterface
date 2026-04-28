@@ -41,8 +41,6 @@ volatile sig_atomic_t shutdownFlag = FALSE; //flag used by signal handler to ind
  * OUTPUTS:*/
 int main()
 {
-
-	int counter = 0;
 	//set up signal handler to allow for graceful shutdown of the program.
 	struct sigaction sigterm_action = { 
     	.sa_handler = cleanUp 
@@ -98,15 +96,15 @@ int main()
 				
 			}
 			rbnode *node = rb_find(app.nodeTree, "MAIN");
-			// HIGHJACKED FOR KEEPALIVE if(node != NULL) 
-			// {
-			// 	ASLNode *mainNode = node->data;
-			// 	pthread_mutex_lock(&app.hardware->hardwareLock);
-			// 	app.hardware->leds[0].state = mainNode->txKey;
-			// 	pthread_mutex_unlock(&app.hardware->hardwareLock);
-			// }
-			node = rb_find(app.nodeTree, "2462");//Seattle
-			if(node != NULL)
+			if(node != NULL) 
+			{
+				ASLNode *mainNode = node->data;
+				pthread_mutex_lock(&app.hardware->hardwareLock);
+				app.hardware->leds[0].state = mainNode->txKey;
+				pthread_mutex_unlock(&app.hardware->hardwareLock);
+			}
+			node = rb_find(app.nodeTree, "2324");//K8SN
+			if(node != NULL) 
 			{
 				ASLNode *mainNode = node->data;
 				pthread_mutex_lock(&app.hardware->hardwareLock);
@@ -114,7 +112,7 @@ int main()
 				app.hardware->leds[2].state = mainNode->rxKey;
 				pthread_mutex_unlock(&app.hardware->hardwareLock);
 			}
-			node = rb_find(app.nodeTree, "472440");//W8IRA
+			node = rb_find(app.nodeTree, "2462");//Seattle
 			if(node != NULL)
 			{
 				ASLNode *mainNode = node->data;
@@ -123,7 +121,7 @@ int main()
 				app.hardware->leds[4].state = mainNode->rxKey;
 				pthread_mutex_unlock(&app.hardware->hardwareLock);
 			}
-			node = rb_find(app.nodeTree, "27339");//East Coast Reflector
+			node = rb_find(app.nodeTree, "472440");//W8IRA
 			if(node != NULL)
 			{
 				ASLNode *mainNode = node->data;
@@ -132,15 +130,16 @@ int main()
 				app.hardware->leds[6].state = mainNode->rxKey;
 				pthread_mutex_unlock(&app.hardware->hardwareLock);
 			}
+			node = rb_find(app.nodeTree, "27339");//East Coast Reflector
+			if(node != NULL)
+			{
+				ASLNode *mainNode = node->data;
+				pthread_mutex_lock(&app.hardware->hardwareLock);
+				app.hardware->leds[7].state = mainNode->mode >= 1 ? TRUE : FALSE;
+				app.hardware->leds[8].state = mainNode->rxKey;
+				pthread_mutex_unlock(&app.hardware->hardwareLock);
+			}
 
-		}
-		counter++;
-		if(counter >= 200)
-		{
-			counter = 0;
-			pthread_mutex_lock(&app.hardware->hardwareLock);
-			app.hardware->leds[0].state = !app.hardware->leds[0].state; //toggle the first LED to show the program is alive.
-			pthread_mutex_unlock(&app.hardware->hardwareLock);
 		}
 		usleep(10000); //delay to prevent busy waiting.
 	}

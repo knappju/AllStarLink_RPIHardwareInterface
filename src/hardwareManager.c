@@ -1,7 +1,7 @@
 #include "hardwareManager.h"
 
 // Config vars - ///TODO: make a config.json or similar to easily pull out these values.
-int defineLeds[NUM_OF_LEDS] = {1,4,5,6,26,27,28};
+int defineLeds[NUM_OF_LEDS] = {29,23,1,4,5,6,26,27,28};
 int defineButtons[NUM_OF_BUTTONS] = {7,0,2,3};
 
 // Private Functions
@@ -147,58 +147,79 @@ int testLeds(Hardware *hwMem)
  * OUTPUTS: 0 for no errors.*/
 int buttonAction(int buttonIndex, uint8_t state)
 {
-	static bool toggle1 = TRUE;
-	static bool toggle2 = TRUE;
-	static bool toggle3 = TRUE;
-	static bool toggle4 = TRUE;
+	static uint8_t toggle1 = 0;
+	static uint8_t toggle2 = 0;
+	static uint8_t toggle3 = 0;
+	static uint8_t toggle0 = 0;
+	if(buttonIndex == 0 && state == BUTTON_STATE_PRESSED)// K8SN
+	{
+		switch(toggle0)
+		{
+			case 0:
+				system("asterisk -rx \"rpt fun 443240 *22324\"");
+				break;
+			case 1:
+			case 3:
+				system("asterisk -rx \"rpt fun 443240 *12324\"");
+				break;
+			case 2:
+				system("asterisk -rx \"rpt fun 443240 *32324\"");
+				break;
+		}
+		toggle0 = (toggle0 + 1) % 4;
+	}
 	if(buttonIndex == 1 && state == BUTTON_STATE_PRESSED)// seattle
 	{
-		if(toggle1)
+		switch(toggle1)
 		{
-			system("asterisk -rx \"rpt fun 443240 *32462\"");
+			case 0:
+				system("asterisk -rx \"rpt fun 443240 *22462\"");
+				break;
+			case 1:
+			case 3:
+				system("asterisk -rx \"rpt fun 443240 *12462\"");
+				break;
+			case 2:
+				system("asterisk -rx \"rpt fun 443240 *32462\"");
+				break;
 		}
-		else
-		{
-			system("asterisk -rx \"rpt fun 443240 *12462\"");
-		}
-		toggle1 = !toggle1;
+		toggle1 = (toggle1 + 1) % 4;
 	}
 	if(buttonIndex == 2 && state == BUTTON_STATE_PRESSED)// W8IRA
 	{
-		if(toggle2)
+		switch(toggle2)
 		{
-			system("asterisk -rx \"rpt fun 443240 *3472440\"");
+			case 0:
+				system("asterisk -rx \"rpt fun 443240 *2472440\"");
+				break;
+			case 1:
+			case 3:
+				system("asterisk -rx \"rpt fun 443240 *1472440\"");
+				break;
+			case 2:
+				system("asterisk -rx \"rpt fun 443240 *3472440\"");
+				break;
 		}
-		else
-		{
-			system("asterisk -rx \"rpt fun 443240 *1472440\"");
-		}
-	toggle2 = !toggle2;
+	toggle2 = (toggle2 + 1) % 4;
 	}
 	if(buttonIndex == 3 && state == BUTTON_STATE_PRESSED)// east coast reflector
 	{
-		if(toggle3)
+		switch(toggle3)
 		{
-			system("asterisk -rx \"rpt fun 443240 *327339\"");
+			case 0:
+				system("asterisk -rx \"rpt fun 443240 *227339\"");
+				break;
+			case 1:
+			case 3:
+				system("asterisk -rx \"rpt fun 443240 *127339\"");
+				break;
+			case 2:
+				system("asterisk -rx \"rpt fun 443240 *327339\"");
+				break;
 		}
-		else
-		{
-			system("asterisk -rx \"rpt fun 443240 *127339\"");
-		}
-		toggle3 = !toggle3;
+		toggle3 = (toggle3 + 1) % 4;
 	}
-	// if(buttonIndex == 4 && state == BUTTON_STATE_PRESSED)// west coast reflector
-	// {
-	// 	if(toggle4)
-	// 	{
-	// 		system("asterisk -rx \"rpt fun 443240 *347243\"");
-	// 	}
-	// 	else
-	// 	{
-	// 		system("asterisk -rx \"rpt fun 443240 *147243\"");
-	// 	}
-	// 	toggle4 = !toggle4;
-	// }
+	
 	return 0;
 }
 

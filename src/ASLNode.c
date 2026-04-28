@@ -115,8 +115,8 @@ void updateASLNode(ASLNode *node, long lastUpdate, const char*action)
 		node->txKey = false;
 	} else if (strcmp(action, "LINKTRX") == 0) {
 		node->mode = 1; // Example mode for LINKTRX
-	} else if (strcmp(action, "LINKLOCALMONITOR") == 0) {
-		node->mode = 2; // Example mode for LINKLOCALMONITOR
+	} else if (strcmp(action, "LINKMONITOR") == 0) {
+		node->mode = 2; // Example mode for LINKMONITOR
 	} else if (strcmp(action, "LINKDISC") == 0) {
 		node->rxKey = false;
 		node->txKey = false;
