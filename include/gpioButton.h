@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 typedef enum {
     GPIO_BUTTON_SUCCESS = 0,
@@ -34,6 +35,48 @@ gpioButtonStatus_t gpioButtonRegisterCB(void* buttonMemory, void (*cb)(uint8_t s
 gpioButtonStatus_t gpioButtonUnregisterCB(void* buttonMemory);
 gpioButtonStatus_t gpioButtonEnableCB(void* buttonMemory);
 gpioButtonStatus_t gpioButtonDisableCB(void* buttonMemory);
+
+#define BUTTON_ISR_LIST \
+    X(1) \
+    X(2) \
+    X(3) \
+    X(4) \
+    X(5) \
+    X(6) \
+    X(7) \
+    X(8) \
+    X(9) \
+    X(10) \
+    X(11) \
+    X(12) \
+    X(13) \
+    X(14) \
+    X(15) \
+    X(16) \
+    X(17) \
+    X(18) \
+    X(19) \
+    X(20) \
+    X(21) \
+    X(22) \
+    X(23) \
+    X(24) \
+    X(25) \
+    X(26) \
+    X(27) \
+    X(28) \
+    X(29) \
+    X(30) \
+    X(31) \
+    X(32) \
+    X(33) \
+    X(34) \
+    X(35) \
+    X(36) \
+    X(37) \
+    X(38) \
+    X(39) \
+    X(40)
 
 
 #endif /* GPIO_BUTTON_H */

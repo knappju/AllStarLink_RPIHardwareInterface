@@ -1,7 +1,23 @@
 #include "gpioButton.h"
 
 //forward declarations of private functions
-void buttonInterupt();
+void buttonInterupt(int pin);
+
+#define X(n) \
+    void button_isr_##n(void) { \
+        buttonInterupt(n); \
+    }
+BUTTON_ISR_LIST
+#undef X
+
+void (*button_isr_table[])(void) = {
+#define X(n) button_isr_##n,
+    BUTTON_ISR_LIST
+#undef X
+};
+
+//declare private variables
+gpioButtonMemory_t *buttonMemLookUp[40] = {NULL};
 
 gpioButtonMemory_t * gpioButtonInit( int pin, int pull, int debounceTimeMs, int interruptEdge)
 {
@@ -25,6 +41,9 @@ gpioButtonMemory_t * gpioButtonInit( int pin, int pull, int debounceTimeMs, int 
         return NULL; //memory allocation failed.
     }
 
+    //set the memory in the lookup table
+    buttonMemLookUp[pin - 1] = buttonMemory;
+
     //initialize the button memory with the provided parameters and default values.
     buttonMemory->pin = pin;
     buttonMemory->pull = pull;
@@ -42,7 +61,7 @@ gpioButtonMemory_t * gpioButtonInit( int pin, int pull, int debounceTimeMs, int 
     buttonMemory->state = digitalRead(pin);
 
     //attach the interupt to the button pin with the provided interrupt edge and the buttonInterupt function as the callback.
-    wiringPiISR(pin, interruptEdge, buttonInterupt);
+    wiringPiISR(pin, interruptEdge, button_isr_table[pin]);
 
     return buttonMemory;
 }
@@ -201,34 +220,28 @@ gpioButtonStatus_t gpioButtonDisableCB(void* buttonMemory)
 }
 
 //private functions
-void buttonInterupt()
+void buttonInterupt(int pin)
 {
+    if (buttonMemLookUp[pin - 1] == NULL) {
+        return; //invalid pointer.
+    }
 
-    //buttonInterupt only knows the pin of what called it...
+    gpioButtonMemory_t *btnMem = buttonMemLookUp[pin - 1];
 
-    //use the pin number to locate the gpioButtonMemory_t. This requires a global array or pointers to each button memory.
-    //not many buttons... could use pin number as index if we want to avoid searching through an array... would need to define a max pin number and allocate an array of that size.
-    // if (buttonMemory == NULL) {
-    //     return; //invalid pointer.
-    // }
+    //get the current time
+    unsigned long currentInterruptTime = millis();
 
-    // // cast to the correct type
-    // gpioButtonMemory_t *btnMem = (gpioButtonMemory_t *) buttonMemory;
+    if (currentInterruptTime - btnMem->lastInterruptTime < btnMem->debounceTimeMs) {
+        return; //debouncing: ignore this interrupt because it occurred too soon after the last one.
+    }
 
-    // //get the current time
-    // unsigned long currentInterruptTime = millis();
+    btnMem->lastInterruptTime = currentInterruptTime;
 
-    // if (currentInterruptTime - btnMem->lastInterruptTime < btnMem->debounceTimeMs) {
-    //     return; //debouncing: ignore this interrupt because it occurred too soon after the last one.
-    // }
+    //read the current state of the button and store it in the button memory.
+    btnMem->state = digitalRead(btnMem->pin);
 
-    // btnMem->lastInterruptTime = currentInterruptTime;
-
-    // //read the current state of the button and store it in the button memory.
-    // btnMem->state = digitalRead(btnMem->pin);
-
-    // //if a callback is registered and enabled for this button, call it with the new state.
-    // if (btnMem->cb != NULL && btnMem->cbEnabled) {
-    //     btnMem->cb(btnMem->state);
-    // }
+    //if a callback is registered and enabled for this button, call it with the new state.
+    if (btnMem->cb != NULL && btnMem->cbEnabled) {
+        btnMem->cb(btnMem->state);
+    }
 }
