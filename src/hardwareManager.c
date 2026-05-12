@@ -91,6 +91,7 @@ int initHardware(Hardware *hwMem)
 		pinMode(hwMem->leds[ledIndex].pin,OUTPUT);
 		digitalWrite(hwMem->leds[ledIndex].pin,LOW);
 	}
+	testLeds(hwMem);
 	for(int buttonIndex = 0; buttonIndex < NUM_OF_BUTTONS; buttonIndex++)
 	{
 		hwMem->buttons[buttonIndex] = (Button){ .pin = defineButtons[buttonIndex], .debouncing = TRUE, .debounceVals = 55, .state = BUTTON_STATE_UNDEFINED };
@@ -132,9 +133,9 @@ int testLeds(Hardware *hwMem)
 	for(int ledIndex = 0; ledIndex < NUM_OF_LEDS; ledIndex++)
 	{
 		digitalWrite(hwMem->leds[ledIndex].pin,LOW);
-		delay(100);
+		delay(50);
 		digitalWrite(hwMem->leds[ledIndex].pin,HIGH);
-		delay(100);
+		delay(50);
 		digitalWrite(hwMem->leds[ledIndex].pin,LOW);
 	}
 	return 0;
