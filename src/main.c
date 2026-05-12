@@ -14,6 +14,7 @@
 
 
 //function defs
+int checkFileExists(const char *filename);
 void cleanUp(int signal_number);
 void findAndUpdateNodeForAction( rbtree *nodeTree, Listener *lMem, LogAction *action);
 
@@ -41,6 +42,7 @@ volatile sig_atomic_t shutdownFlag = FALSE; //flag used by signal handler to ind
  * OUTPUTS:*/
 int main()
 {
+	int intializationResult = 0;
 	//set up signal handler to allow for graceful shutdown of the program.
 	struct sigaction sigterm_action = { 
     	.sa_handler = cleanUp 
@@ -55,18 +57,40 @@ int main()
         exit(EXIT_FAILURE);
     }
 
+	//confirm config files exist and are not corrupted before starting the program.
+	if (checkFileExists(HARDWARE_DEFINITIONS_FILE_PATH) == -1) {
+		fprintf(stderr, "Error: Hardware definitions file not found or corrupted.\n");
+		intializationResult |= HARDWARE_DEFINITION_FILE_PATH_INIT_ERROR;
+	}
+	if (checkFileExists(APPCONFIG_FILE_PATH) == -1) {
+		fprintf(stderr, "Error: AppConfig file not found or corrupted.\n");
+		intializationResult |= APPCONFIG_FILE_PATH_INIT_ERROR;
+	}
+	if (checkFileExists(NODES_FILE_PATH) == -1) {
+		fprintf(stderr, "Error: Nodes file not found or corrupted.\n");
+		intializationResult |= NODES_FILE_PATH_INIT_ERROR;
+	}
+	if (checkFileExists(RPT_CONF_FILE_PATH) == -1) {
+		fprintf(stderr, "Error: RPT config file not found or corrupted.\n");
+		intializationResult |= RPT_CONF_FILE_PATH_INIT_ERROR;
+	}
+
 	//create memory
 	AppMemory *mem = calloc(1, sizeof(AppMemory));
 	if (!mem) 
 	{
-		return -1; //memory allocation failed.
+		fprintf(stderr, "Error: Memory allocation failed.\n");
+		intializationResult |= APP_MEMORY_ALLOCATION_INIT_ERROR;
+		return intializationResult; //memory allocation failed.
 	}
 
 	// create rbtree for nodes
 	if((mem->nodeTree = rb_create(compareASLNode, destroyASLNode)) == NULL)
 	{
 		free(mem);
-		return -1; //memory allocation failed.
+		fprintf(stderr, "Error: RB tree allocation failed.\n");
+		intializationResult |= RB_TREE_ALLOCATION_INIT_ERROR;
+		return intializationResult; //memory allocation failed.
 	}
 
 	//connect memory to quick reference struct.
@@ -81,7 +105,20 @@ int main()
 
 	//init and kick off threads.
 	initHardware(app.hardware);
-	initListener(app.listener);
+	if(initListener(app.listener) == -1)
+	{
+		app.hardware->halt = TRUE;
+		pthread_join(app.hardware->id, NULL);
+		rb_destroy(app.nodeTree);
+		free(mem);
+		return intializationResult | LISTENER_THREAD_INIT_ERROR; //listener thread failed to initialize.
+	}
+
+	if(intializationResult != 0)
+	{
+		printf("Initialization completed with errors.\n");
+		cleanUp(0); //call cleanup to set shutdown flag and allow for graceful shutdown of threads.
+	}
 
 	while( !shutdownFlag)
 	{
@@ -156,6 +193,16 @@ int main()
 	free(mem);
 	
 	return 0;
+}
+
+int checkFileExists(const char *filename)
+{
+	FILE *file = fopen(filename, "r");
+	if (file) {
+		fclose(file);
+		return 0; // file exists
+	}
+	return -1; // file does not exist
 }
 
 /* FUNCTION: cleanUp

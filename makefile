@@ -4,10 +4,13 @@ SOURCE_DIR = src
 OBJECT_DIR = obj
 BUILD_DIR = /usr/bin
 SERVICE_DIR = systemd
+CONFIG_DIR = configs
 
+TARGET_CONFIG_DIR = /etc/asl-interface
 TARGET_SERVICE_DIR = /etc/systemd/system
 
 # --- Files ---
+CONFIG_FILES = $(wildcard $(CONFIG_DIR)/*.json)
 SOURCE_FILES = $(wildcard $(SOURCE_DIR)/*.c)
 OBJECT_FILES = $(patsubst $(SOURCE_DIR)/%.c, $(OBJECT_DIR)/%.o, $(SOURCE_FILES))
 TARGET_FILE = $(BUILD_DIR)/asl-interface
@@ -18,7 +21,10 @@ CFLAGS = -I$(INCLUDE_DIR) -Wall -Wextra -g
 LIBS = -lwiringPi -lcjson
 
 # --- Rules ---
-all: check-dependencies $(OBJECT_FILES) stop-and-update-service $(TARGET_FILE) run-service
+all: check-dependencies $(OBJECT_FILES) stop-service cp-service $(TARGET_FILE) run-service
+
+debug: check-dependencies $(OBJECT_FILES) stop-service $(TARGET_FILE)
+	@echo "Debug build complete. You can run the program with: sudo $(TARGET_FILE)"
 
 $(TARGET_FILE): $(OBJECT_FILES)
 	$(CC) $(OBJECT_FILES) -o $@ $(LIBS)
@@ -52,8 +58,7 @@ check-dependencies:
 	fi
 	@echo "All dependencies are installed..."
 
-# checks if the service exists, stops it if it does, and then updates or creates the service file as needed.
-stop-and-update-service:
+stop-service:
 	@echo "Checking service status..."
 	@if systemctl status asl-interface.service >/dev/null 2>&1; then \
 		echo "Service exists. Stopping..."; \
@@ -64,15 +69,33 @@ stop-and-update-service:
 		else \
 			echo "Service stopped successfully."; \
 		fi \
-	else \
-		echo "Service not running..."; \
 	fi; \
-	if ! cmp -s $(SERVICE_DIR)/asl-interface.service $(TARGET_SERVICE_DIR)/asl-interface.service; then \
+
+cp-service:
+	@echo "Confirming difference in service file..."
+	@if ! cmp -s $(SERVICE_DIR)/asl-interface.service $(TARGET_SERVICE_DIR)/asl-interface.service; then \
 		echo "Updating service file..."; \
 		sudo cp $(SERVICE_DIR)/asl-interface.service $(TARGET_SERVICE_DIR)/; \
 	else \
 		echo "Service file is up to date. No changes made."; \
 	fi 
+
+cp-configs:
+	@echo "Ensuring target config directory exists..."
+	@if [ ! -d "$(TARGET_CONFIG_DIR)" ]; then \
+		echo "Creating target config directory at $(TARGET_CONFIG_DIR)..."; \
+		sudo mkdir -p $(TARGET_CONFIG_DIR); \
+	fi
+	@echo "checking config files for differences..."
+	@for config in $(CONFIG_FILES); do \
+		target_config=$(TARGET_CONFIG_DIR)/$$(basename $$config); \
+		if [ ! -f "$$target_config" ] || ! cmp -s "$$config" "$$target_config"; then \
+			echo "Updating config file: $$(basename $$config)"; \
+			sudo cp "$$config" "$$target_config"; \
+		else \
+			echo "Config file $$(basename $$config) is up to date. No changes made."; \
+		fi; \
+	done
 
 run-service:
 	@echo "Starting service..."
@@ -83,4 +106,4 @@ run-service:
 clean:
 	rm -rf $(OBJECT_DIR)
 
-.PHONY: all clean check-dependencies stop-and-update-service run-service
+.PHONY: all clean debug check-dependencies stop-service cp-service run-service cp-configs

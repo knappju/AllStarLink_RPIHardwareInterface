@@ -5,8 +5,9 @@ const char *logActionFilter[] = ACTION_FILTERS;
 
 // private functions
 void ParseLogAction(const char *logLine, LogAction *action);
-void printLogAction(const LogAction *action);   
-void makeLogFilePathAndName(char *output, size_t size);
+void printLogAction(const LogAction *action);
+int getNodeNumberFromRPTConfig(char **nodeNumberPtr);   
+void makeLogFilePathAndName(char *output, size_t size, const char *nodeNumber);
 
 /* FUNCTION: initListener
  * DESC: Used to initialize the listener thread and related variables.
@@ -19,7 +20,17 @@ int initListener(Listener *lMem)
 {
     if(lMem == NULL) return -1;
 
+    //Initialize default values for the listener memory
     lMem->halt = false;
+    lMem->NodeNumber = NULL;
+    if(getNodeNumberFromRPTConfig(&lMem->NodeNumber) == -1)
+    {
+        printf("Error getting node number from rpt.conf\n");
+        return -1;
+    }
+
+    printf("Node Number: %s\n", lMem->NodeNumber);
+
     pthread_mutex_init(&lMem->listenerLock,NULL);
     pthread_create(&lMem->id,NULL,listener,lMem);
 
@@ -41,7 +52,7 @@ void* listener(void* args)
 
     TAILQ_INIT(&lMem->recentActions);
 
-    makeLogFilePathAndName(currentPath, sizeof(currentPath));
+    makeLogFilePathAndName(currentPath, sizeof(currentPath), lMem->NodeNumber);
     logFile = fopen(currentPath, "r");
     if (logFile) {
         fseek(logFile, 0, SEEK_END);
@@ -52,10 +63,14 @@ void* listener(void* args)
         fgets(buffer, sizeof(buffer), logFile);
         currentLocation = ftell(logFile);
     }
+    else
+    {
+        printf("Log file not found at startup, will keep trying to find it.\n");
+    }
 
     while (!lMem->halt)
     {
-        makeLogFilePathAndName(newPath, sizeof(newPath));
+        makeLogFilePathAndName(newPath, sizeof(newPath), lMem->NodeNumber);
         if (strcmp(currentPath, newPath) != 0) {
             printf("Log rotated: %s -> %s\n", currentPath, newPath);
             if (logFile) {
@@ -147,6 +162,9 @@ void* listener(void* args)
         free(action);
     }
     pthread_mutex_unlock(&lMem->listenerLock);
+    if (lMem->NodeNumber) {
+        free(lMem->NodeNumber);
+    }
     pthread_exit(NULL);
 }
 
@@ -158,17 +176,55 @@ void printLogAction(const LogAction *action) {
     printf("Name: %s, Action: %s, Time: %ld\n", action->name, action->action, action->LastUpdate);
 }
 
-void makeLogFilePathAndName(char *output, size_t size)
+void makeLogFilePathAndName(char *output, size_t size, const char *nodeNumber)   
 {
     time_t t = time(NULL);
     struct tm tm_info;
     localtime_r(&t, &tm_info);
 
-    snprintf(output, size, "%s/%04d%02d%02d.txt",
-             LOG_FILE_PATH,
+    snprintf(output, size, "%s/%s/%04d%02d%02d.txt",
+             LOG_FILE_PREFIX_PATH,
+             nodeNumber,
              tm_info.tm_year + 1900,
              tm_info.tm_mon + 1,
              tm_info.tm_mday);
+}
+
+int getNodeNumberFromRPTConfig(char **node_number_ptr) {
+    FILE *file = fopen(RPT_CONF_FILE_PATH, "r");
+    if (!file || !node_number_ptr) return -1;
+
+    char line[512];
+    int result = -1;
+
+    while (fgets(line, sizeof(line), file)) {
+        char *ptr = line;
+        while (isspace(*ptr)) ptr++;
+        if (*ptr == ';' || *ptr == '\n' || *ptr == '\0') continue;
+        if (*ptr == '[') {
+            ptr++;
+            char *end = strchr(ptr, ']');
+            if (end) {
+                int len = end - ptr;
+                if (len > 0 && len <= 6) {
+                    char *p = ptr;
+                    while (p < end && isdigit(*p)) p++;
+                    if (p == end) {
+                        *node_number_ptr = malloc(len + 1);
+                        if (*node_number_ptr) {
+                            strncpy(*node_number_ptr, ptr, len);
+                            (*node_number_ptr)[len] = '\0';
+                            result = 0;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fclose(file);
+    return result;
 }
 
 void printListenerActions(Listener *lMem) {
