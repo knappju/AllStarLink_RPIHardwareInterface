@@ -1,55 +1,18 @@
 [
     {
         "node": "2462",
-        "friendlyname": "WW7PSR",
-        "desiredchannelnumber": 1,
-        "shedule":
-        [
-            {
-                "netname" : "noontime net",
-                "utcstartdayofweek" : "monday",
-                "utcstart" : "16:00",
-                "utcenddayofweek": "monday",
-                "utcend" : "17:00",
-                "mode" : "transceive",
-                "priority" : 5
-            },
-            {
-                "netname" : "noontime net",
-                "utcstartdayofweek" : "tuesday",
-                "utcstart" : "16:00",
-                "utcenddayofweek": "tuesday",
-                "utcend" : "17:00",
-                "mode" : "transceive",
-                "priority" : 5
-            },
-            {
-                "netname" : "noontime net",
-                "utcstartdayofweek" : "wednesday",
-                "utcstart" : "16:00",
-                "utcenddayofweek": "wednesday",
-                "utcend" : "17:00",
-                "mode" : "transceive",
-                "priority" : 5
-            },
-            {
-                "netname" : "noontime net",
-                "utcstartdayofweek" : "thursday",
-                "utcstart" : "16:00",
-                "utcenddayofweek": "thursday",
-                "utcend" : "17:00",
-                "mode" : "transceive",
-                "priority" : 5
-            },
-            {
-                "netname" : "noontime net",
-                "utcstartdayofweek" : "friday",
-                "utcstart" : "16:00",
-                "utcenddayofweek": "friday",
-                "utcend" : "17:00",
-                "mode" : "transceive",
-                "priority" : 5
-            }
-        ]
+        "friendlyname": "WW7PSR"
+    },
+    {
+        "node": "2324",
+        "friendlyname": "K8SN"
+    },
+    {
+        "node": "472440",
+        "friendlyname": "W8IRA"
+    },
+    {
+        "node": "27339",
+        "friendlyname": "ECR"
     }
 ]

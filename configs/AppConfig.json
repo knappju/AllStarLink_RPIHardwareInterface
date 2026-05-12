@@ -1,0 +1,43 @@
+{
+    "appConfigVersion": "1.0",
+    "mainTxLed": "led1",
+    "mainRxLed": "none",
+    "mainAux1Led": "none",
+    "mainAux2Led": "none",
+    "channelMappings":
+    [
+        {
+            "channelNumber": 1,
+            "node": "2324",
+            "conLed" : "led2",
+            "txLed": "none",
+            "rxLed": "led3",
+            "button": "button1"
+        },
+        {
+            "channelNumber": 2,
+            "node": "2462",
+            "conLed" : "led4",
+            "txLed": "none",
+            "rxLed": "led5",
+            "button": "button2"
+        },
+        {
+            "channelNumber": 3,
+            "node": "472440",
+            "conLed" : "led6",
+            "txLed": "none",
+            "rxLed": "led7",
+            "button": "button3"
+        },
+        {
+            "channelNumber": 4,
+            "node": "27339",
+            "conLed" : "led8",
+            "txLed": "none",
+            "rxLed": "led9",
+            "button": "button4"
+        }
+    ]
+    
+}
