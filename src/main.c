@@ -12,7 +12,6 @@
 #include "ASLNode.h"
 #include "globalDefines.h"
 
-
 //function defs
 int checkFileExists(const char *filename);
 void cleanUp(int signal_number);

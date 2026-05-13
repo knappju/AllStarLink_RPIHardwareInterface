@@ -21,9 +21,9 @@ CFLAGS = -I$(INCLUDE_DIR) -Wall -Wextra -g
 LIBS = -lwiringPi -lcjson
 
 # --- Rules ---
-all: check-dependencies $(OBJECT_FILES) stop-service cp-service $(TARGET_FILE) run-service
+all: check-dependencies $(OBJECT_FILES) stop-service cp-service cp-configs $(TARGET_FILE) run-service
 
-debug: check-dependencies $(OBJECT_FILES) stop-service $(TARGET_FILE)
+debug: check-dependencies $(OBJECT_FILES) stop-service cp-configs $(TARGET_FILE)
 	@echo "Debug build complete. You can run the program with: sudo $(TARGET_FILE)"
 
 $(TARGET_FILE): $(OBJECT_FILES)
@@ -41,11 +41,11 @@ $(OBJECT_DIR):
 # Check for required dependencies and attempt to install them if missing.
 check-dependencies:
 	@echo "Checking for required dependencies..."
-	@if ! dpkg -s libcjson-dev >/dev/null 2>&1; then \
-		echo "Installing libcjson-dev..."; \
+	@if ! dpkg -s libjsmn-dev >/dev/null 2>&1; then \
+		echo "Installing libjsmn-dev..."; \
 		sudo apt update; \
-		if ! sudo apt install -y libcjson-dev; then \
-			echo "WARNING: Failed to install libcjson-dev!"; \
+		if ! sudo apt install -y libjsmn-dev; then \
+			echo "WARNING: Failed to install libjsmn-dev!"; \
 			exit 1; \
 		fi \
 	fi
