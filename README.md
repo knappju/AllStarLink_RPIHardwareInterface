@@ -3,7 +3,7 @@
 README UNDER CONTRUCTION
 
 ## Prerequisites
-### 
+### Enable I2C (if using serial expander)
 
 ### Enable activity logging
 1. Open you configuration file: 

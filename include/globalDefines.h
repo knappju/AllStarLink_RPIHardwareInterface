@@ -1,9 +1,9 @@
 #ifndef GLOBALDEFINES_H
 #define GLOBALDEFINES_H
 
-#define SOFTWARE_REVISION_NUMBER "0.4.0.0"
+#define SOFTWARE_REVISION_NUMBER "0.5.0.0"
 
-#define NUM_OF_LEDS 9 ///TODO: make this dynamic based on the hardware definitions file.
+#define NUM_OF_LEDS 12 ///TODO: make this dynamic based on the hardware definitions file.
 #define NUM_OF_BUTTONS 4 ///TODO: make this dynamic based on the hardware definitions file.
 
 #define ACTION_FILTERS {"RXKEY", "TXKEY", "RXUNKEY", "TXUNKEY", "LINKTRX", "LINKMONITOR", "LINKDISC"}

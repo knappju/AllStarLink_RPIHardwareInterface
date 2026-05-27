@@ -136,25 +136,58 @@ int main()
 			{
 				ASLNode *mainNode = node->data;
 				pthread_mutex_lock(&app.hardware->hardwareLock);
-				app.hardware->leds[0].state = mainNode->txKey;
+				/*
+				if(mainNode->rxKey){
+					app.hardware->leds[0].state = FALSE;
+					app.hardware->leds[NUM_OF_LEDS - 1].state = TRUE;
+				}
+				else if(mainNode->txKey){
+					app.hardware->leds[0].state = TRUE;
+					app.hardware->leds[NUM_OF_LEDS - 1].state = FALSE;
+				}
+				else{
+					app.hardware->leds[0].state = FALSE;
+					app.hardware->leds[NUM_OF_LEDS - 1].state = FALSE;
+				}*/
 				pthread_mutex_unlock(&app.hardware->hardwareLock);
 			}
 			node = rb_find(app.nodeTree, "2324");//K8SN
 			if(node != NULL) 
 			{
 				ASLNode *mainNode = node->data;
+				/*
 				pthread_mutex_lock(&app.hardware->hardwareLock);
 				app.hardware->leds[1].state = mainNode->mode >= 1 ? TRUE : FALSE;
 				app.hardware->leds[2].state = mainNode->rxKey;
 				pthread_mutex_unlock(&app.hardware->hardwareLock);
+				*/
 			}
 			node = rb_find(app.nodeTree, "2462");//Seattle
 			if(node != NULL)
 			{
 				ASLNode *mainNode = node->data;
 				pthread_mutex_lock(&app.hardware->hardwareLock);
-				app.hardware->leds[3].state = mainNode->mode >= 1 ? TRUE : FALSE;
-				app.hardware->leds[4].state = mainNode->rxKey;
+				switch(mainNode->mode)
+				{
+					case 0:
+						app.hardware->leds[0].state = FALSE;
+						app.hardware->leds[1].state = FALSE;
+						break;
+					case 1:
+						app.hardware->leds[0].state = TRUE;
+						app.hardware->leds[1].state = FALSE;
+						break;
+					case 2:
+						app.hardware->leds[0].state = FALSE;
+						app.hardware->leds[1].state = TRUE;
+						break;
+					default:
+						app.hardware->leds[0].state = FALSE;
+						app.hardware->leds[1].state = FALSE;
+						break;
+				}
+				app.hardware->leds[2].state = mainNode->rxKey;
+				app.hardware->leds[3].state = mainNode->txKey;
 				pthread_mutex_unlock(&app.hardware->hardwareLock);
 			}
 			node = rb_find(app.nodeTree, "472440");//W8IRA
@@ -162,8 +195,27 @@ int main()
 			{
 				ASLNode *mainNode = node->data;
 				pthread_mutex_lock(&app.hardware->hardwareLock);
-				app.hardware->leds[5].state = mainNode->mode >= 1 ? TRUE : FALSE;
+				switch(mainNode->mode)
+				{
+					case 0:
+						app.hardware->leds[4].state = FALSE;
+						app.hardware->leds[5].state = FALSE;
+						break;
+					case 1:
+						app.hardware->leds[4].state = TRUE;
+						app.hardware->leds[5].state = FALSE;
+						break;
+					case 2:
+						app.hardware->leds[4].state = FALSE;
+						app.hardware->leds[5].state = TRUE;
+						break;
+					default:
+						app.hardware->leds[4].state = FALSE;
+						app.hardware->leds[5].state = FALSE;
+						break;
+				}
 				app.hardware->leds[6].state = mainNode->rxKey;
+				app.hardware->leds[7].state = mainNode->txKey;
 				pthread_mutex_unlock(&app.hardware->hardwareLock);
 			}
 			node = rb_find(app.nodeTree, "27339");//East Coast Reflector
@@ -171,13 +223,32 @@ int main()
 			{
 				ASLNode *mainNode = node->data;
 				pthread_mutex_lock(&app.hardware->hardwareLock);
-				app.hardware->leds[7].state = mainNode->mode >= 1 ? TRUE : FALSE;
-				app.hardware->leds[8].state = mainNode->rxKey;
+				switch(mainNode->mode)
+				{
+					case 0:
+						app.hardware->leds[8].state = FALSE;
+						app.hardware->leds[9].state = FALSE;
+						break;
+					case 1:
+						app.hardware->leds[8].state = TRUE;
+						app.hardware->leds[9].state = FALSE;
+						break;
+					case 2:
+						app.hardware->leds[8].state = FALSE;
+						app.hardware->leds[9].state = TRUE;
+						break;
+					default:
+						app.hardware->leds[8].state = FALSE;
+						app.hardware->leds[9].state = FALSE;
+						break;
+				}
+				app.hardware->leds[10].state = mainNode->rxKey;
+				app.hardware->leds[11].state = mainNode->txKey;
 				pthread_mutex_unlock(&app.hardware->hardwareLock);
 			}
 
 		}
-		usleep(10000); //delay to prevent busy waiting.
+		usleep(5000); //delay to prevent busy waiting.
 	}
 
 	//start the shutdown process for the threads.

@@ -1,7 +1,7 @@
 #include "hardwareManager.h"
 
 // Config vars - ///TODO: make a config.json or similar to easily pull out these values.
-int defineLeds[NUM_OF_LEDS] = {29,23,1,4,5,6,26,27,28};
+int defineLeds[NUM_OF_LEDS] = {1,4,5,6,26,27,28,29,21,22,23,24};
 int defineButtons[NUM_OF_BUTTONS] = {7,0,2,3};
 
 // Private Functions
