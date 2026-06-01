@@ -18,7 +18,7 @@ TARGET_FILE = $(BUILD_DIR)/asl-interface
 # --- Compiler Settings ---
 CC = gcc
 CFLAGS = -I$(INCLUDE_DIR) -Wall -Wextra -g
-LIBS = -lwiringPi -lcjson
+LIBS = -lwiringPi -ljson-c
 
 # --- Rules ---
 all: check-dependencies $(OBJECT_FILES) stop-service cp-service cp-configs $(TARGET_FILE) run-service
@@ -41,11 +41,11 @@ $(OBJECT_DIR):
 # Check for required dependencies and attempt to install them if missing.
 check-dependencies:
 	@echo "Checking for required dependencies..."
-	@if ! dpkg -s libjsmn-dev >/dev/null 2>&1; then \
-		echo "Installing libjsmn-dev..."; \
+	@if ! dpkg -s libjson-c-dev >/dev/null 2>&1; then \
+		echo "Installing libjson-c-dev..."; \
 		sudo apt update; \
-		if ! sudo apt install -y libjsmn-dev; then \
-			echo "WARNING: Failed to install libjsmn-dev!"; \
+		if ! sudo apt install -y libjson-c-dev; then \
+			echo "WARNING: Failed to install libjson-c-dev!"; \
 			exit 1; \
 		fi \
 	fi

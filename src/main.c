@@ -11,6 +11,7 @@
 #include "rb.h"
 #include "ASLNode.h"
 #include "globalDefines.h"
+#include "HAL.h"
 
 //function defs
 int checkFileExists(const char *filename);
@@ -102,7 +103,14 @@ int main()
 	ASLNode *mainNode = makeASLNode("MAIN");
 	rb_insert(app.nodeTree, mainNode);
 
-	//init and kick off threads.
+	HAL_t *hal = initHAL();
+	if (hal == NULL) {
+		intializationResult |= HARDWARE_DEFINITION_FILE_PATH_INIT_ERROR;
+	}
+
+	HALLoadConfig(hal, HARDWARE_DEFINITIONS_FILE_PATH);
+
+	//init and kick off threads
 	initHardware(app.hardware);
 	if(initListener(app.listener) == -1)
 	{
@@ -113,6 +121,9 @@ int main()
 		return intializationResult | LISTENER_THREAD_INIT_ERROR; //listener thread failed to initialize.
 	}
 
+	
+		
+	//LAST CHANCE TO ABORT SETTING UP.
 	if(intializationResult != 0)
 	{
 		printf("Initialization completed with errors.\n");
@@ -250,6 +261,8 @@ int main()
 		}
 		usleep(5000); //delay to prevent busy waiting.
 	}
+
+	deinitHAL(hal);
 
 	//start the shutdown process for the threads.
 	app.hardware->halt = TRUE;

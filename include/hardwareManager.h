@@ -1,6 +1,10 @@
 #ifndef hardwareManager_h
 #define hardwareManager_h
 
+//***************************************************************************
+// DEPRECIATION NOTICE - THIS FILE SHALL BE DEPRECIATED WHEN THE HAL WORKS 
+// **************************************************************************/
+
 #include <stdlib.h>
 #include <wiringPi.h>
 #include <pthread.h>
