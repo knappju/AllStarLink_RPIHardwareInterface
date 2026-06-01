@@ -1,6 +1,9 @@
 /*
  * Copyright (c) 2019 xieqing. https://github.com/xieqing
  * May be freely redistributed, but copyright notice must be retained.
+ *
+ * Red-black tree implementation. Used in this project as the primary index
+ * for ASLNode objects, keyed on the node number string.
  */
 
 #ifndef _RB_HEADER
@@ -45,7 +48,7 @@ typedef struct {
 #define RB_MINIMAL(rbt) ((rbt)->min)
 
 #define RB_ISEMPTY(rbt) ((rbt)->root.left == &(rbt)->nil && (rbt)->root.right == &(rbt)->nil)
-#define RB_APPLY(rbt, f, c, o) rbapply_node((rbt), (rbt)->root.left, (f), (c), (o))
+#define RB_APPLY(rbt, f, c, o) rb_apply((rbt), (rbt)->root.left, (f), (c), (o))
 
 rbtree *rb_create(int (*compare_func)(const void *, const void *), void (*destroy_func)(void *));
 void rb_destroy(rbtree *rbt);
@@ -53,7 +56,7 @@ void rb_destroy(rbtree *rbt);
 rbnode *rb_find(rbtree *rbt, void *data);
 rbnode *rb_successor(rbtree *rbt, rbnode *node);
 
-int rb_apply_node(rbtree *rbt, rbnode *node, int (*func)(void *, void *), void *cookie, enum rbtraversal order);
+int rb_apply(rbtree *rbt, rbnode *node, int (*func)(void *, void *), void *cookie, enum rbtraversal order);
 void rb_print(rbtree *rbt, void (*print_func)(void *));
 
 rbnode *rb_insert(rbtree *rbt, void *data);
