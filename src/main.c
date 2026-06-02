@@ -7,12 +7,12 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <pthread.h>
 #include <sys/time.h>
 #include <time.h>
 #include <signal.h>
 #include <sys/queue.h>
-#include "hardwareManager.h"
 #include "listener.h"
 #include "rb.h"
 #include "ASLNode.h"
@@ -41,7 +41,7 @@ typedef struct {
 } App;
 
 /* Set by the signal handler; checked by the main loop and child threads. */
-volatile sig_atomic_t shutdownFlag = FALSE;
+volatile sig_atomic_t shutdownFlag = false;
 
 int main(void)
 {
@@ -132,12 +132,14 @@ int main(void)
     //testing led via direct mem access
     for(int led = 0; led < app.hal->numLeds; led++){
         app.hal->leds[led].setConstant(app.hal->leds[led].impl, HAL_LED_MODE_ON);
-        usleep(10000); //2 second delay to observe the blink
+        usleep(10000); // 10 ms delay to observe the blink
         app.hal->leds[led].setConstant(app.hal->leds[led].impl, HAL_LED_MODE_OFF);
-        usleep(10000); //2 second delay to observe the blink
+        usleep(10000); // 10 ms delay to observe the blink
         app.hal->leds[led].setOneShot(app.hal->leds[led].impl, 50);
-        usleep(60000); //1 second delay to allow one-shot to complete
+        usleep(60000); // 60 ms delay to allow one-shot to complete
         app.hal->leds[led].setBlink(app.hal->leds[led].impl, 100, 100);
+        usleep(420000); // 420 ms delay to observe the blink
+        app.hal->leds[led].setConstant(app.hal->leds[led].impl, HAL_LED_MODE_OFF);
     }
 
     // HALLedSetConstant(hal, HALFindLedByName(hal, "led1"), HAL_LED_MODE_ON); //via HAL API
@@ -172,7 +174,7 @@ int main(void)
 
     deinitHAL(app.hal);
 
-    app.listener->halt = TRUE;
+    app.listener->halt = true;
     pthread_join(app.listener->id, NULL);
 
     rb_destroy(app.nodeTree);
@@ -205,7 +207,7 @@ static int checkFileExists(const char *filename)
 static void cleanUp(int signal_number)
 {
     (void)signal_number; /* signal number is not used */
-    shutdownFlag = TRUE;
+    shutdownFlag = true;
 }
 
 /**

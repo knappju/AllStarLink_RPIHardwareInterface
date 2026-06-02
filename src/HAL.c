@@ -128,7 +128,6 @@ HALStatus_t deinitHAL(HAL *hal)
     free(hal->leds);
 
     pthread_mutex_destroy(&hal->HALLock);
-    free(hal);
     return HAL_SUCCESS;
 }
 
