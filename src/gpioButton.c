@@ -11,6 +11,7 @@
 #include "gpioButton.h"
 
 static void buttonInterupt(int pin);
+static void debounceTimerCb(union sigval sv);
 
 /* Generate one ISR stub per pin (button_isr_1 .. button_isr_40).
  * Each stub calls the shared handler with its pin number. */
@@ -47,14 +48,14 @@ gpioButtonMemory_t *gpioButtonInit(int pin, int pull, int debounceTimeMs, int in
     {
         return NULL; /* invalid interrupt edge */
     }
-
+ 
     gpioButtonMemory_t *buttonMemory = malloc(sizeof(gpioButtonMemory_t));
     if (buttonMemory == NULL) {
         return NULL;
     }
-
+ 
     buttonMemLookUp[pin - 1] = buttonMemory;
-
+ 
     buttonMemory->pin             = pin;
     buttonMemory->pull            = pull;
     buttonMemory->debounceTimeMs  = debounceTimeMs;
@@ -62,15 +63,30 @@ gpioButtonMemory_t *gpioButtonInit(int pin, int pull, int debounceTimeMs, int in
     buttonMemory->cb              = NULL;
     buttonMemory->cbEnabled       = false;
     buttonMemory->lastInterruptTime = millis();
-
+ 
     pinMode(pin, INPUT);
     pullUpDnControl(pin, pull);
     buttonMemory->state = digitalRead(pin);
-
+ 
+    /* Create a one-shot per-button POSIX timer.
+     * SIGEV_THREAD spins up a new thread for the callback, so the handler
+     * is not constrained by ISR rules and can call digitalRead / the user cb
+     * directly. sival_ptr carries the btnMem pointer into the callback. */
+    struct sigevent sev = {
+        .sigev_notify            = SIGEV_THREAD,
+        .sigev_notify_function   = debounceTimerCb,
+        .sigev_value.sival_ptr   = buttonMemory,
+    };
+    if (timer_create(CLOCK_MONOTONIC, &sev, &buttonMemory->debounceTimer) != 0) {
+        free(buttonMemory);
+        buttonMemLookUp[pin - 1] = NULL;
+        return NULL;
+    }
+ 
     /* Register the pin-specific ISR stub. The table is 0-indexed while pin
      * numbers are 1-indexed, hence the (pin - 1) offset. */
     wiringPiISR(pin, interruptEdge, button_isr_table[pin - 1]);
-
+ 
     return buttonMemory;
 }
 
@@ -86,8 +102,15 @@ gpioButtonStatus_t gpioButtonDeinit(void *buttonMemory)
         gpioButtonDisableCB(btnMem);
     }
 
-    /* Detach the ISR by setting edge to INT_EDGE_SETUP (no-op). */
-    wiringPiISR(btnMem->pin, INT_EDGE_SETUP, NULL);
+    /* Cancel any pending debounce timer and release its resources before
+     * freeing the struct it points into. */
+    timer_delete(btnMem->debounceTimer);
+ 
+    /* Detach the ISR — wiringPi provides no unregister call, but resetting
+     * the pin mode to INPUT stops edges from being detected. */
+    pinMode(btnMem->pin, INPUT);
+ 
+    buttonMemLookUp[btnMem->pin - 1] = NULL;
 
     free(btnMem);
     return GPIO_BUTTON_SUCCESS;
@@ -175,27 +198,44 @@ gpioButtonStatus_t gpioButtonDisableCB(void *buttonMemory)
     return GPIO_BUTTON_SUCCESS;
 }
 
+
+/* Called by the POSIX timer once debounceTimeMs of silence has elapsed.
+ * Runs in a fresh thread (SIGEV_THREAD) so digitalRead and the user callback
+ * are safe to call here. Only invokes the callback when the pin state has
+ * actually changed since the last confirmed edge. */
+static void debounceTimerCb(union sigval sv)
+{
+    gpioButtonMemory_t *btnMem = (gpioButtonMemory_t *)sv.sival_ptr;
+ 
+    uint8_t stableState = digitalRead(btnMem->pin);
+ 
+    if (stableState != btnMem->state) {
+        btnMem->state            = stableState;
+        btnMem->lastInterruptTime = millis();
+ 
+        if (btnMem->cb != NULL && btnMem->cbEnabled) {
+            btnMem->cb(btnMem->state);
+        }
+    }
+}
+
 /* Shared ISR handler called by all pin-specific stubs.
- * Performs software debounce: ignores interrupts that arrive within
- * debounceTimeMs of the last accepted interrupt. */
+ * Re-arms the debounce timer on every edge, pushing its expiry out by
+ * debounceTimeMs. The timer only fires once the line has been quiet for
+ * the full window. */
 static void buttonInterupt(int pin)
 {
-    if (buttonMemLookUp[pin - 1] == NULL) {
-        return;
-    }
-
+    if (buttonMemLookUp[pin - 1] == NULL) return;
+ 
     gpioButtonMemory_t *btnMem = buttonMemLookUp[pin - 1];
-    unsigned long now = millis();
-
-    if (now - btnMem->lastInterruptTime < (unsigned long)btnMem->debounceTimeMs) {
-        printf("Interrupt on pin %d ignored due to debounce (time since last: %lu ms)\n", pin, now - btnMem->lastInterruptTime);
-        return; /* too soon — bounce, ignore */
-    }
-
-    btnMem->lastInterruptTime = now;
-    btnMem->state = digitalRead(btnMem->pin);
-
-    if (btnMem->cb != NULL && btnMem->cbEnabled) {
-        btnMem->cb(btnMem->state);
-    }
+ 
+    struct itimerspec ts = {
+        .it_value = {
+            .tv_sec  = btnMem->debounceTimeMs / 1000,
+            .tv_nsec = (btnMem->debounceTimeMs % 1000) * 1000000L,
+        },
+        .it_interval = { 0, 0 },  /* one-shot */
+    };
+ 
+    timer_settime(btnMem->debounceTimer, 0, &ts, NULL);
 }

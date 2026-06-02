@@ -3,7 +3,7 @@
         "type" : "gpioButton",
         "pin" : 7, 
         "logicalName" : "button1",
-        "debounceTimeMS" : 80,
+        "debounceTimeMS" : 40,
         "pull" : "off",
         "interrupt" : "both"
     },
@@ -11,7 +11,7 @@
         "type" : "gpioButton",
         "pin" : 0, 
         "logicalName" : "button2",
-        "debounceTimeMS" : 80,
+        "debounceTimeMS" : 40,
         "pull" : "off",
         "interrupt" : "both"
     },
@@ -19,7 +19,7 @@
         "type" : "gpioButton",
         "pin" : 2, 
         "logicalName" : "button3",
-        "debounceTimeMS" : 80,
+        "debounceTimeMS" : 40,
         "pull" : "off",
         "interrupt" : "both"
     },
@@ -27,7 +27,7 @@
         "type" : "gpioButton",
         "pin" : 3, 
         "logicalName" : "button4",
-        "debounceTimeMS" : 80,
+        "debounceTimeMS" : 40,
         "pull" : "off",
         "interrupt" : "both"
     },

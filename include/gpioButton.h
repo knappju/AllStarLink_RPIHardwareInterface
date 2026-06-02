@@ -12,6 +12,8 @@
 #define GPIO_BUTTON_H
 
 #include <wiringPi.h>
+#include <signal.h>
+#include <time.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -30,11 +32,12 @@ typedef struct {
     int pin;                          /* physical RPi pin number (1-40) */
     int pull;                         /* wiringPi pull resistor: PUD_UP/DOWN/OFF */
     int debounceTimeMs;               /* minimum ms between accepted interrupts */
-    int state;                        /* most recently debounced pin level */
-    unsigned long lastInterruptTime;  /* millis() timestamp of last accepted ISR */
     int interruptEdge;                /* INT_EDGE_RISING / FALLING / BOTH */
     void (*cb)(uint8_t state);        /* optional user callback, called on state change */
     bool cbEnabled;                   /* when false, cb is suppressed even if registered */
+    int state;                        /* most recently debounced pin level */
+    unsigned long lastInterruptTime;  /* millis() timestamp of last accepted ISR */
+    timer_t debounceTimer;
 } gpioButtonMemory_t;
 
 /**
