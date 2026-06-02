@@ -146,4 +146,6 @@ HALStatus_t HALLedSetConstant(HAL_t *hal, int index, HALLedMode_t mode);
 HALStatus_t HALLedSetOneShot (HAL_t *hal, int index, unsigned long durationMs);
 HALStatus_t HALLedSetBlink   (HAL_t *hal, int index, unsigned long onDurationMs, unsigned long offDurationMs);
 
+
+void buttonCallbackTest(uint8_t state);
 #endif /* HAL_H */

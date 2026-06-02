@@ -109,11 +109,22 @@ int main(void)
 
     HALLoadConfig(hal, HARDWARE_DEFINITIONS_FILE_PATH);
 
-    initHardware(app.hardware);
+    // printf("Finished HAL initialization.\n");
+
+    // printf("Number of buttons: %d\n", hal->numButtons);
+    // for (int i = 0; i < hal->numButtons; i++) {
+    //     printf("  Button %d: %s\n", i, hal->buttons[i].logicalName);
+    // }
+    // printf("Number of LEDs: %d\n", hal->numLeds);
+    // for (int i = 0; i < hal->numLeds; i++) {
+    //     printf("  LED %d: %s\n", i, hal->leds[i].logicalName);
+    // }
+
+    //initHardware(app.hardware);
 
     if (initListener(app.listener) == -1) {
-        app.hardware->halt = TRUE;
-        pthread_join(app.hardware->id, NULL);
+        //app.hardware->halt = TRUE;
+        //pthread_join(app.hardware->id, NULL);
         rb_destroy(app.nodeTree);
         free(mem);
         return initializationResult | LISTENER_THREAD_INIT_ERROR;
@@ -125,115 +136,139 @@ int main(void)
     }
 
     /* ── Main event loop ──────────────────────────────────────────────── */
+    //testing led via direct mem access
+    for(int led = 0; led < hal->numLeds; led++){
+        hal->leds[led].setConstant(hal->leds[led].impl, HAL_LED_MODE_ON);
+        usleep(10000); //2 second delay to observe the blink
+        hal->leds[led].setConstant(hal->leds[led].impl, HAL_LED_MODE_OFF);
+        usleep(10000); //2 second delay to observe the blink
+        hal->leds[led].setOneShot(hal->leds[led].impl, 50);
+        usleep(60000); //1 second delay to allow one-shot to complete
+        hal->leds[led].setBlink(hal->leds[led].impl, 100, 100);
+    }
+
+    // HALLedSetConstant(hal, HALFindLedByName(hal, "led1"), HAL_LED_MODE_ON); //via HAL API
+    // usleep(100000); //1 second delay
+    // HALLedSetConstant(hal, HALFindLedByName(hal, "led1"), HAL_LED_MODE_OFF);
+    // usleep(100000); //1 second delay
+    // HALLedSetOneShot(hal, HALFindLedByName(hal, "led1"), 200);
+    // usleep(300000); //3 second delay to allow one-shot to complete
+    // HALLedSetBlink(hal, HALFindLedByName(hal, "led1"), 500, 500); 
+
+    HALButtonRegisterCB(hal, HALFindButtonByName(hal, "button1"), buttonCallbackTest);
+    HALButtonEnableCB(hal, HALFindButtonByName(hal, "button1"));
+
 
     while (!shutdownFlag) {
-        if (app.listener->recentActions.tqh_first == NULL) {
-            usleep(5000); /* 5 ms idle delay to avoid busy-waiting */
-            continue;
-        }
+        usleep(500000); /* 500 ms idle delay to avoid busy-waiting */
+        
+        // if (app.listener->recentActions.tqh_first == NULL) {
+        //     usleep(5000); /* 5 ms idle delay to avoid busy-waiting */
+        //     continue;
+        // }
 
         /* Drain all pending listener actions into the node tree. */
-        while (app.listener->recentActions.tqh_first != NULL) {
-            findAndUpdateNodeForAction(app.nodeTree, app.listener,
-                                       app.listener->recentActions.tqh_first);
-        }
+        // while (app.listener->recentActions.tqh_first != NULL) {
+        //     findAndUpdateNodeForAction(app.nodeTree, app.listener,
+        //                                app.listener->recentActions.tqh_first);
+        // }
 
         /* Drive LED state from the current node states.
          * TODO: migrate to HAL LED API once the config-driven mapping is
          * implemented. The direct hardware[] assignments below are temporary. */
 
-        rbnode *node;
+        //rbnode *node;
 
-        node = rb_find(app.nodeTree, "MAIN");
-        if (node != NULL) {
-            /* MAIN node RX/TX state reserved for future LED assignment. */
-            (void)node;
-        }
+        // node = rb_find(app.nodeTree, "MAIN");
+        // if (node != NULL) {
+        //     /* MAIN node RX/TX state reserved for future LED assignment. */
+        //     (void)node;
+        // }
 
-        node = rb_find(app.nodeTree, "2324"); /* K8SN */
-        if (node != NULL) {
-            /* TODO: assign LEDs for K8SN node. */
-            (void)node;
-        }
+        // node = rb_find(app.nodeTree, "2324"); /* K8SN */
+        // if (node != NULL) {
+        //     /* TODO: assign LEDs for K8SN node. */
+        //     (void)node;
+        // }
 
-        node = rb_find(app.nodeTree, "2462"); /* Seattle */
-        if (node != NULL) {
-            ASLNode *n = node->data;
-            pthread_mutex_lock(&app.hardware->hardwareLock);
-            switch (n->mode) {
-                case 1:
-                    app.hardware->leds[0].state = TRUE;
-                    app.hardware->leds[1].state = FALSE;
-                    break;
-                case 2:
-                    app.hardware->leds[0].state = FALSE;
-                    app.hardware->leds[1].state = TRUE;
-                    break;
-                default:
-                    app.hardware->leds[0].state = FALSE;
-                    app.hardware->leds[1].state = FALSE;
-                    break;
-            }
-            app.hardware->leds[2].state = n->rxKey;
-            app.hardware->leds[3].state = n->txKey;
-            pthread_mutex_unlock(&app.hardware->hardwareLock);
-        }
+        // node = rb_find(app.nodeTree, "2462"); /* Seattle */
+        // if (node != NULL) {
+        //     ASLNode *n = node->data;
+        //     pthread_mutex_lock(&app.hardware->hardwareLock);
+        //     switch (n->mode) {
+        //         case 1:
+        //             app.hardware->leds[0].state = TRUE;
+        //             app.hardware->leds[1].state = FALSE;
+        //             break;
+        //         case 2:
+        //             app.hardware->leds[0].state = FALSE;
+        //             app.hardware->leds[1].state = TRUE;
+        //             break;
+        //         default:
+        //             app.hardware->leds[0].state = FALSE;
+        //             app.hardware->leds[1].state = FALSE;
+        //             break;
+        //     }
+        //     app.hardware->leds[2].state = n->rxKey;
+        //     app.hardware->leds[3].state = n->txKey;
+        //     pthread_mutex_unlock(&app.hardware->hardwareLock);
+        // }
 
-        node = rb_find(app.nodeTree, "472440"); /* W8IRA */
-        if (node != NULL) {
-            ASLNode *n = node->data;
-            pthread_mutex_lock(&app.hardware->hardwareLock);
-            switch (n->mode) {
-                case 1:
-                    app.hardware->leds[4].state = TRUE;
-                    app.hardware->leds[5].state = FALSE;
-                    break;
-                case 2:
-                    app.hardware->leds[4].state = FALSE;
-                    app.hardware->leds[5].state = TRUE;
-                    break;
-                default:
-                    app.hardware->leds[4].state = FALSE;
-                    app.hardware->leds[5].state = FALSE;
-                    break;
-            }
-            app.hardware->leds[6].state = n->rxKey;
-            app.hardware->leds[7].state = n->txKey;
-            pthread_mutex_unlock(&app.hardware->hardwareLock);
-        }
+        // node = rb_find(app.nodeTree, "472440"); /* W8IRA */
+        // if (node != NULL) {
+        //     ASLNode *n = node->data;
+        //     pthread_mutex_lock(&app.hardware->hardwareLock);
+        //     switch (n->mode) {
+        //         case 1:
+        //             app.hardware->leds[4].state = TRUE;
+        //             app.hardware->leds[5].state = FALSE;
+        //             break;
+        //         case 2:
+        //             app.hardware->leds[4].state = FALSE;
+        //             app.hardware->leds[5].state = TRUE;
+        //             break;
+        //         default:
+        //             app.hardware->leds[4].state = FALSE;
+        //             app.hardware->leds[5].state = FALSE;
+        //             break;
+        //     }
+        //     app.hardware->leds[6].state = n->rxKey;
+        //     app.hardware->leds[7].state = n->txKey;
+        //     pthread_mutex_unlock(&app.hardware->hardwareLock);
+        // }
 
-        node = rb_find(app.nodeTree, "27339"); /* East Coast Reflector */
-        if (node != NULL) {
-            ASLNode *n = node->data;
-            pthread_mutex_lock(&app.hardware->hardwareLock);
-            switch (n->mode) {
-                case 1:
-                    app.hardware->leds[8].state  = TRUE;
-                    app.hardware->leds[9].state  = FALSE;
-                    break;
-                case 2:
-                    app.hardware->leds[8].state  = FALSE;
-                    app.hardware->leds[9].state  = TRUE;
-                    break;
-                default:
-                    app.hardware->leds[8].state  = FALSE;
-                    app.hardware->leds[9].state  = FALSE;
-                    break;
-            }
-            app.hardware->leds[10].state = n->rxKey;
-            app.hardware->leds[11].state = n->txKey;
-            pthread_mutex_unlock(&app.hardware->hardwareLock);
-        }
+        // node = rb_find(app.nodeTree, "27339"); /* East Coast Reflector */
+        // if (node != NULL) {
+        //     ASLNode *n = node->data;
+        //     pthread_mutex_lock(&app.hardware->hardwareLock);
+        //     switch (n->mode) {
+        //         case 1:
+        //             app.hardware->leds[8].state  = TRUE;
+        //             app.hardware->leds[9].state  = FALSE;
+        //             break;
+        //         case 2:
+        //             app.hardware->leds[8].state  = FALSE;
+        //             app.hardware->leds[9].state  = TRUE;
+        //             break;
+        //         default:
+        //             app.hardware->leds[8].state  = FALSE;
+        //             app.hardware->leds[9].state  = FALSE;
+        //             break;
+        //     }
+        //     app.hardware->leds[10].state = n->rxKey;
+        //     app.hardware->leds[11].state = n->txKey;
+        //     pthread_mutex_unlock(&app.hardware->hardwareLock);
+        // }
     }
 
     /* ── Shutdown sequence ────────────────────────────────────────────── */
 
     deinitHAL(hal);
 
-    app.hardware->halt = TRUE;
+    //app.hardware->halt = TRUE;
     app.listener->halt = TRUE;
 
-    pthread_join(app.hardware->id, NULL);
+    //pthread_join(app.hardware->id, NULL);
     pthread_join(app.listener->id, NULL);
 
     rb_destroy(app.nodeTree);

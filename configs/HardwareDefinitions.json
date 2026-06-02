@@ -3,77 +3,92 @@
         "type" : "gpioButton",
         "pin" : 7, 
         "logicalName" : "button1",
-        "debounceTimeMS" : 50,
+        "debounceTimeMS" : 80,
         "pull" : "off",
-        "interrupt" : "rising"
+        "interrupt" : "both"
     },
     {
         "type" : "gpioButton",
         "pin" : 0, 
         "logicalName" : "button2",
-        "debounceTimeMS" : 50,
+        "debounceTimeMS" : 80,
         "pull" : "off",
-        "interrupt" : "rising"
+        "interrupt" : "both"
     },
     {
         "type" : "gpioButton",
         "pin" : 2, 
         "logicalName" : "button3",
-        "debounceTimeMS" : 50,
+        "debounceTimeMS" : 80,
         "pull" : "off",
-        "interrupt" : "rising"
+        "interrupt" : "both"
     },
     {
         "type" : "gpioButton",
         "pin" : 3, 
         "logicalName" : "button4",
-        "debounceTimeMS" : 50,
+        "debounceTimeMS" : 80,
         "pull" : "off",
-        "interrupt" : "rising"
-    },
-    {
-        "type" : "gpioLed",
-        "pin" : 29,
-        "logicalName" : "led1"
-    },
-    {
-        "type" : "gpioLed",
-        "pin" : 23,
-        "logicalName" : "led2"
+        "interrupt" : "both"
     },
     {
         "type" : "gpioLed",
         "pin" : 1,
-        "logicalName" : "led3"
+        "logicalName" : "led1"
     },
     {
         "type" : "gpioLed",
         "pin" : 4,
-        "logicalName" : "led4"
+        "logicalName" : "led2"
     },
     {
         "type" : "gpioLed",
         "pin" : 5,
-        "logicalName" : "led5"
+        "logicalName" : "led3"
     },
     {
         "type" : "gpioLed",
         "pin" : 6,
-        "logicalName" : "led6"
+        "logicalName" : "led4"
     },
     {
         "type" : "gpioLed",
         "pin" : 26,
-        "logicalName" : "led7"
+        "logicalName" : "led5"
     },
     {
         "type" : "gpioLed",
         "pin" : 27,
-        "logicalName" : "led8"
+        "logicalName" : "led6"
     },
     {
         "type" : "gpioLed",
         "pin" : 28,
+        "logicalName" : "led7"
+    },
+    {
+        "type" : "gpioLed",
+        "pin" : 29,
+        "logicalName" : "led8"
+    },
+    {
+        "type" : "gpioLed",
+        "pin" : 21,
         "logicalName" : "led9"
+    },
+    {
+        "type" : "gpioLed",
+        "pin" : 22,
+        "logicalName" : "led10"
+    },
+    {
+        "type" : "gpioLed",
+        "pin" : 23,
+        "logicalName" : "led11"
+    },
+    {
+        "type" : "gpioLed",
+        "pin" : 24,
+        "logicalName" : "led12"
     }
 ]

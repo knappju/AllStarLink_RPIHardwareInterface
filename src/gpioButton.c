@@ -32,7 +32,7 @@ static gpioButtonMemory_t *buttonMemLookUp[40] = {NULL};
 
 gpioButtonMemory_t *gpioButtonInit(int pin, int pull, int debounceTimeMs, int interruptEdge)
 {
-    if (pin < 1 || pin > 40) {
+    if (pin < 0 || pin > 30) {
         return NULL; /* invalid pin number */
     }
     if (pull != PUD_OFF && pull != PUD_UP && pull != PUD_DOWN) {
@@ -188,6 +188,7 @@ static void buttonInterupt(int pin)
     unsigned long now = millis();
 
     if (now - btnMem->lastInterruptTime < (unsigned long)btnMem->debounceTimeMs) {
+        printf("Interrupt on pin %d ignored due to debounce (time since last: %lu ms)\n", pin, now - btnMem->lastInterruptTime);
         return; /* too soon — bounce, ignore */
     }
 

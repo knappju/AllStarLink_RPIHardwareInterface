@@ -408,3 +408,12 @@ static json_object *parseJSONFile(const char *filePath)
 
     return root;
 }
+
+int globalcounter = 1;
+
+void buttonCallbackTest(uint8_t state){
+    
+    if(state == 0){
+        printf("globalcounter: %d\n", globalcounter++);
+    }
+}
