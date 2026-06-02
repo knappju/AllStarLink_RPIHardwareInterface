@@ -23,6 +23,7 @@
 static int  checkFileExists(const char *filename);
 static void cleanUp(int signal_number);
 static void findAndUpdateNodeForAction(rbtree *nodeTree, Listener *lMem, LogAction *action);
+static void testLeds(HAL *hal);
 
 /* All application heap memory lives in one allocation so a single free()
  * releases everything except the rbtree (which has its own allocator). */
@@ -129,30 +130,9 @@ int main(void)
     }
 
     /* ── Main event loop ──────────────────────────────────────────────── */
-    //testing led via direct mem access
-    for(int led = 0; led < app.hal->numLeds; led++){
-        app.hal->leds[led].setConstant(app.hal->leds[led].impl, HAL_LED_MODE_ON);
-        usleep(10000); // 10 ms delay to observe the blink
-        app.hal->leds[led].setConstant(app.hal->leds[led].impl, HAL_LED_MODE_OFF);
-        usleep(10000); // 10 ms delay to observe the blink
-        app.hal->leds[led].setOneShot(app.hal->leds[led].impl, 50);
-        usleep(60000); // 60 ms delay to allow one-shot to complete
-        app.hal->leds[led].setBlink(app.hal->leds[led].impl, 100, 100);
-        usleep(420000); // 420 ms delay to observe the blink
-        app.hal->leds[led].setConstant(app.hal->leds[led].impl, HAL_LED_MODE_OFF);
-    }
-
-    // HALLedSetConstant(hal, HALFindLedByName(hal, "led1"), HAL_LED_MODE_ON); //via HAL API
-    // usleep(100000); //1 second delay
-    // HALLedSetConstant(hal, HALFindLedByName(hal, "led1"), HAL_LED_MODE_OFF);
-    // usleep(100000); //1 second delay
-    // HALLedSetOneShot(hal, HALFindLedByName(hal, "led1"), 200);
-    // usleep(300000); //3 second delay to allow one-shot to complete
-    // HALLedSetBlink(hal, HALFindLedByName(hal, "led1"), 500, 500); 
-
+    testLeds(app.hal);
     HALButtonRegisterCB(app.hal, HALFindButtonByName(app.hal, "button1"), buttonCallbackTest);
     HALButtonEnableCB(app.hal, HALFindButtonByName(app.hal, "button1"));
-
 
     while (!shutdownFlag) {
         
@@ -234,6 +214,35 @@ static void findAndUpdateNodeForAction(rbtree *nodeTree, Listener *lMem, LogActi
     lMem->queueSize--;
     pthread_mutex_unlock(&lMem->listenerLock);
     free(action);
+}
+
+static void testLeds(HAL *hal){
+
+    //make sure hal has been init
+    if(hal->leds == NULL || hal->numLeds == 0){
+        printf("HAL not initialized or no LEDs configured.\n");
+        return;
+    }
+    //testing led via direct mem access
+    for(int led = 0; led < hal->numLeds; led++){
+        hal->leds[led].setConstant(hal->leds[led].impl, HAL_LED_MODE_ON);
+        usleep(10000); // 10 ms delay to observe the blink
+        hal->leds[led].setConstant(hal->leds[led].impl, HAL_LED_MODE_OFF);
+        usleep(10000); // 10 ms delay to observe the blink
+        hal->leds[led].setOneShot(hal->leds[led].impl, 50);
+        usleep(60000); // 60 ms delay to allow one-shot to complete
+        hal->leds[led].setBlink(hal->leds[led].impl, 100, 100);
+        usleep(420000); // 420 ms delay to observe the blink
+        hal->leds[led].setConstant(hal->leds[led].impl, HAL_LED_MODE_OFF);
+    }
+
+    // HALLedSetConstant(hal, HALFindLedByName(hal, "led1"), HAL_LED_MODE_ON); //via HAL API
+    // usleep(100000); //1 second delay
+    // HALLedSetConstant(hal, HALFindLedByName(hal, "led1"), HAL_LED_MODE_OFF);
+    // usleep(100000); //1 second delay
+    // HALLedSetOneShot(hal, HALFindLedByName(hal, "led1"), 200);
+    // usleep(300000); //3 second delay to allow one-shot to complete
+    // HALLedSetBlink(hal, HALFindLedByName(hal, "led1"), 500, 500); 
 }
 
 
