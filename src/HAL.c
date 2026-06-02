@@ -100,13 +100,8 @@ int initHAL(HAL *halMem)
 
     wiringPiSetup();
 
-    HAL *hal = halMem ? halMem : calloc(1, sizeof(HAL));
-    if (!hal) return -1;
-
-    if (pthread_mutex_init(&hal->HALLock, NULL) != 0) {
-        free(hal);
+    if (pthread_mutex_init(&halMem->HALLock, NULL) != 0)
         return -1;
-    }
 
     return 0;
 }

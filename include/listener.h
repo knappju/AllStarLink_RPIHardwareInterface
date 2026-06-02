@@ -50,6 +50,7 @@ typedef struct {
     pthread_t        id;
     pthread_mutex_t  listenerLock;   /* guards recentActions and queueSize */
     bool             halt;           /* set true to stop the listener thread */
+    bool             initialized;
     struct logHead   recentActions;  /* TAILQ of unprocessed LogAction items */
     int              queueSize;      /* current depth of recentActions */
 } Listener;

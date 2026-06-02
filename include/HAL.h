@@ -92,6 +92,7 @@ typedef struct {
     int              numButtons;
     HAL_Led_t       *leds;        /* heap-allocated array, length = numLeds */
     int              numLeds;
+    bool             initialized;
 } HAL;
 
 /* ── Lifecycle ──────────────────────────────────────────────────────────── */

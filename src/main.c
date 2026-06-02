@@ -5,12 +5,10 @@
  */
 
 #include <stdio.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <unistd.h>
 #include <pthread.h>
-#include <sys/time.h>
-#include <time.h>
 #include <signal.h>
 #include <sys/queue.h>
 #include "listener.h"
@@ -19,175 +17,206 @@
 #include "globalDefines.h"
 #include "HAL.h"
 
-/* Forward declarations */
-static int  checkFileExists(const char *filename);
-static void cleanUp(int signal_number);
-static void findAndUpdateNodeForAction(rbtree *nodeTree, Listener *lMem, LogAction *action);
-static void testLeds(HAL *hal);
-
 /* All application heap memory lives in one allocation so a single free()
  * releases everything except the rbtree (which has its own allocator). */
 typedef struct {
-    HAL hal;
+    HAL      hal;
     Listener listener;
     rbtree  *nodeTree;
 } AppMemory;
 
-/* Convenience struct of pointers into AppMemory; avoids carrying AppMemory*
- * everywhere and makes ownership clear at each call site. */
-typedef struct {
-    HAL *hal;
-    Listener *listener;
-    rbtree   *nodeTree;
-} App;
+/* Forward declarations */
+/* -- Signal handling -- */
+static void onShutdownSignal(int signal_number);
+static int  initSignals(void);
+/* -- Lifecycle -- */
+static int  initApp(AppMemory **mem);
+static int  loadConfig(AppMemory *mem);
+static void deinitApp(AppMemory *mem);
+/* -- Event loop -- */
+static void runApp(AppMemory *mem);
+static void findAndUpdateNodeForAction(rbtree *nodeTree, Listener *lMem, LogAction *action);
+/* -- Utilities -- */
+static int  checkFileExists(const char *filename);
+/* -- Debug -- */
+static void testLeds(HAL *hal);
 
 /* Set by the signal handler; checked by the main loop and child threads. */
 volatile sig_atomic_t shutdownFlag = false;
 
 int main(void)
 {
-    int initializationResult = 0;
+    AppMemory *mem = NULL;
 
-    /* Install the same graceful-shutdown handler for the three termination
-     * signals we care about. */
-    struct sigaction sigterm_action = {
-        .sa_handler = cleanUp
-    };
-    sigemptyset(&sigterm_action.sa_mask);
-
-    if (sigaction(SIGINT,  &sigterm_action, NULL) == -1 ||
-        sigaction(SIGTERM, &sigterm_action, NULL) == -1 ||
-        sigaction(SIGHUP,  &sigterm_action, NULL) == -1)
-    {
-        perror("sigaction");
+    if (initSignals() == -1)
         exit(EXIT_FAILURE);
+
+    int initResult = initApp(&mem);
+    if (initResult != 0) {
+        deinitApp(mem);
+        return initResult;
     }
 
-    /* Verify all required config files are present before touching hardware. */
+    if (loadConfig(mem) != 0) {
+        deinitApp(mem);
+        return -1;
+    }
+
+    runApp(mem);
+    deinitApp(mem);
+
+    return 0;
+}
+
+/* ── Signal handling ──────────────────────────────────────────────────────── */
+
+static void onShutdownSignal(int signal_number)
+{
+    (void)signal_number;
+    shutdownFlag = true;
+}
+
+/**
+ * @brief Register onShutdownSignal for SIGINT, SIGTERM, and SIGHUP.
+ * @return 0 on success, -1 on failure.
+ */
+static int initSignals(void)
+{
+    struct sigaction sa = { .sa_handler = onShutdownSignal };
+    sigemptyset(&sa.sa_mask);
+
+    if (sigaction(SIGINT,  &sa, NULL) == -1 ||
+        sigaction(SIGTERM, &sa, NULL) == -1 ||
+        sigaction(SIGHUP,  &sa, NULL) == -1)
+    {
+        perror("sigaction");
+        return -1;
+    }
+
+    return 0;
+}
+
+/* ── Lifecycle ────────────────────────────────────────────────────────────── */
+
+/**
+ * @brief Initialize all application subsystems.
+ *
+ * Verifies config files, allocates AppMemory, initializes the HAL and
+ * Listener. Does not perform any cleanup on failure — the caller must call
+ * deinitApp() regardless of the return value.
+ *
+ * @param mem  Set to the allocated AppMemory block, or NULL if allocation failed.
+ * @return     Accumulated error bitmask (0 = fully successful).
+ */
+static int initApp(AppMemory **mem)
+{
+    int result = 0;
+
     if (checkFileExists(HARDWARE_DEFINITIONS_FILE_PATH) == -1) {
         fprintf(stderr, "Error: Hardware definitions file not found or corrupted.\n");
-        initializationResult |= HARDWARE_DEFINITION_FILE_PATH_INIT_ERROR;
+        result |= HARDWARE_DEFINITION_FILE_PATH_INIT_ERROR;
     }
     if (checkFileExists(APPCONFIG_FILE_PATH) == -1) {
         fprintf(stderr, "Error: AppConfig file not found or corrupted.\n");
-        initializationResult |= APPCONFIG_FILE_PATH_INIT_ERROR;
+        result |= APPCONFIG_FILE_PATH_INIT_ERROR;
     }
     if (checkFileExists(NODES_FILE_PATH) == -1) {
         fprintf(stderr, "Error: Nodes file not found or corrupted.\n");
-        initializationResult |= NODES_FILE_PATH_INIT_ERROR;
+        result |= NODES_FILE_PATH_INIT_ERROR;
     }
     if (checkFileExists(RPT_CONF_FILE_PATH) == -1) {
         fprintf(stderr, "Error: RPT config file not found or corrupted.\n");
-        initializationResult |= RPT_CONF_FILE_PATH_INIT_ERROR;
+        result |= RPT_CONF_FILE_PATH_INIT_ERROR;
     }
 
-    /* Create AppMemory Structure and fill with zeros.*/
-    AppMemory *mem = calloc(1, sizeof(AppMemory));
-    if (!mem) {
+    *mem = calloc(1, sizeof(AppMemory));
+    if (!*mem) {
         fprintf(stderr, "Error: Memory allocation failed.\n");
-        return initializationResult | APP_MEMORY_ALLOCATION_INIT_ERROR;
+        return result | APP_MEMORY_ALLOCATION_INIT_ERROR;
     }
 
-    mem->nodeTree = rb_create(compareASLNode, destroyASLNode);
-    if (!mem->nodeTree) {
-        free(mem);
+    AppMemory *m = *mem;
+
+    m->nodeTree = rb_create(compareASLNode, destroyASLNode);
+    if (!m->nodeTree) {
         fprintf(stderr, "Error: RB tree allocation failed.\n");
-        return initializationResult | RB_TREE_ALLOCATION_INIT_ERROR;
+        return result | RB_TREE_ALLOCATION_INIT_ERROR;
     }
 
-    /* Create app and connect the pointers*/
-    App app;
-    app.hal = &mem->hal;
-    app.listener  = &mem->listener;
-    app.nodeTree  = mem->nodeTree;
+    if (initHAL(&m->hal) == -1) {
+        fprintf(stderr, "Error: HAL initialization failed.\n");
+        return result | HAL_INIT_ERROR;
+    }
+    m->hal.initialized = true;
 
-    //init HAL
-    if(initHAL(app.hal) == -1) {
-        deinitHAL(app.hal);
-        rb_destroy(app.nodeTree);
-        free(mem);
-        return initializationResult | HAL_INIT_ERROR;
+    if (initListener(&m->listener) == -1) {
+        fprintf(stderr, "Error: Listener initialization failed.\n");
+        return result | LISTENER_THREAD_INIT_ERROR;
+    }
+    m->listener.initialized = true;
+
+    return result;
+}
+
+/**
+ * @brief Load hardware definitions and seed the node tree with the local node.
+ * @return 0 on success, -1 if the hardware config file could not be parsed.
+ */
+static int loadConfig(AppMemory *mem)
+{
+    HALStatus_t status = HALLoadConfig(&mem->hal, HARDWARE_DEFINITIONS_FILE_PATH);
+    if (status != HAL_SUCCESS) {
+        fprintf(stderr, "Error: Failed to load hardware config (status %d).\n", status);
+        return -1;
     }
 
-    //init Listener
-    if (initListener(app.listener) == -1) {
-        deinitHAL(app.hal);
-        rb_destroy(app.nodeTree);
-        free(mem);
-        return initializationResult | LISTENER_THREAD_INIT_ERROR;
-    }
-
-    //load configs
-    HALLoadConfig(app.hal, HARDWARE_DEFINITIONS_FILE_PATH);
-
-      /* The "MAIN" node represents the local repeater itself. */
     ASLNode *mainNode = makeASLNode("MAIN");
-    rb_insert(app.nodeTree, mainNode);
-
-    if (initializationResult != 0) {
-        printf("Initialization completed with errors.\n");
-        cleanUp(0);
-    }
-
-    /* ── Main event loop ──────────────────────────────────────────────── */
-    testLeds(app.hal);
-    HALButtonRegisterCB(app.hal, HALFindButtonByName(app.hal, "button1"), buttonCallbackTest);
-    HALButtonEnableCB(app.hal, HALFindButtonByName(app.hal, "button1"));
-
-    while (!shutdownFlag) {
-        
-        if (app.listener->recentActions.tqh_first == NULL) {
-            usleep(5000); /* 5 ms idle delay to avoid busy-waiting */
-            continue;
-        }
-
-        /* Drain all pending listener actions into the node tree. */
-        while (app.listener->recentActions.tqh_first != NULL) {
-            findAndUpdateNodeForAction(app.nodeTree, app.listener,
-                                       app.listener->recentActions.tqh_first);
-        }
-
-        //rbnode *node;
-    }
-
-    /* ── Shutdown sequence ────────────────────────────────────────────── */
-
-    deinitHAL(app.hal);
-
-    app.listener->halt = true;
-    pthread_join(app.listener->id, NULL);
-
-    rb_destroy(app.nodeTree);
-    free(mem);
+    rb_insert(mem->nodeTree, mainNode);
 
     return 0;
 }
 
 /**
- * @brief Test whether a file exists and can be opened for reading.
- * @return 0 if the file exists, -1 otherwise.
+ * @brief Tear down all initialized subsystems and free AppMemory.
+ *
+ * Safe to call at any point after initApp() — checks flags before touching
+ * each subsystem so partial initialization is handled correctly.
  */
-static int checkFileExists(const char *filename)
+static void deinitApp(AppMemory *mem)
 {
-    FILE *file = fopen(filename, "r");
-    if (file) {
-        fclose(file);
-        return 0;
+    if (!mem)
+        return;
+
+    if (mem->hal.initialized)
+        deinitHAL(&mem->hal);
+
+    if (mem->listener.initialized) {
+        mem->listener.halt = true;
+        pthread_join(mem->listener.id, NULL);
+        pthread_mutex_destroy(&mem->listener.listenerLock);
     }
-    return -1;
+
+    if (mem->nodeTree)
+        rb_destroy(mem->nodeTree);
+
+    free(mem);
 }
 
-/**
- * @brief Signal handler for SIGINT, SIGTERM, and SIGHUP.
- *
- * Sets the global shutdownFlag so the main loop and all threads can exit
- * cleanly rather than being killed mid-operation with hardware in an
- * unknown state.
- */
-static void cleanUp(int signal_number)
+/* ── Event loop ───────────────────────────────────────────────────────────── */
+
+static void runApp(AppMemory *mem)
 {
-    (void)signal_number; /* signal number is not used */
-    shutdownFlag = true;
+    while (!shutdownFlag) {
+        if (TAILQ_EMPTY(&mem->listener.recentActions)) {
+            usleep(5000); /* 5 ms idle poll — avoids busy-waiting */
+            continue;
+        }
+
+        while (!TAILQ_EMPTY(&mem->listener.recentActions)) {
+            findAndUpdateNodeForAction(mem->nodeTree, &mem->listener,
+                                       TAILQ_FIRST(&mem->listener.recentActions));
+        }
+    }
 }
 
 /**
@@ -213,41 +242,51 @@ static void findAndUpdateNodeForAction(rbtree *nodeTree, Listener *lMem, LogActi
     TAILQ_REMOVE(&lMem->recentActions, action, entries);
     lMem->queueSize--;
     pthread_mutex_unlock(&lMem->listenerLock);
+
     free(action);
 }
 
-static void testLeds(HAL *hal){
+/* ── Utilities ────────────────────────────────────────────────────────────── */
 
-    //make sure hal has been init
-    if(hal->leds == NULL || hal->numLeds == 0){
+/**
+ * @brief Test whether a file exists and can be opened for reading.
+ * @return 0 if the file exists, -1 otherwise.
+ */
+static int checkFileExists(const char *filename)
+{
+    FILE *f = fopen(filename, "r");
+    if (!f)
+        return -1;
+    fclose(f);
+    return 0;
+}
+
+/* ── Debug ────────────────────────────────────────────────────────────────── */
+
+static void testLeds(HAL *hal)
+{
+    if (!hal->leds || hal->numLeds == 0) {
         printf("HAL not initialized or no LEDs configured.\n");
         return;
     }
-    //testing led via direct mem access
-    for(int led = 0; led < hal->numLeds; led++){
-        hal->leds[led].setConstant(hal->leds[led].impl, HAL_LED_MODE_ON);
-        usleep(10000); // 10 ms delay to observe the blink
-        hal->leds[led].setConstant(hal->leds[led].impl, HAL_LED_MODE_OFF);
-        usleep(10000); // 10 ms delay to observe the blink
-        hal->leds[led].setOneShot(hal->leds[led].impl, 50);
-        usleep(60000); // 60 ms delay to allow one-shot to complete
-        hal->leds[led].setBlink(hal->leds[led].impl, 100, 100);
-        usleep(420000); // 420 ms delay to observe the blink
-        hal->leds[led].setConstant(hal->leds[led].impl, HAL_LED_MODE_OFF);
-    }
 
-    // HALLedSetConstant(hal, HALFindLedByName(hal, "led1"), HAL_LED_MODE_ON); //via HAL API
-    // usleep(100000); //1 second delay
-    // HALLedSetConstant(hal, HALFindLedByName(hal, "led1"), HAL_LED_MODE_OFF);
-    // usleep(100000); //1 second delay
-    // HALLedSetOneShot(hal, HALFindLedByName(hal, "led1"), 200);
-    // usleep(300000); //3 second delay to allow one-shot to complete
-    // HALLedSetBlink(hal, HALFindLedByName(hal, "led1"), 500, 500); 
+    for (int i = 0; i < hal->numLeds; i++) {
+        HAL_Led_t *led = &hal->leds[i];
+        led->setConstant(led->impl, HAL_LED_MODE_ON);
+        usleep(10000);                          /* 10 ms on */
+        led->setConstant(led->impl, HAL_LED_MODE_OFF);
+        usleep(10000);                          /* 10 ms off */
+        led->setOneShot(led->impl, 50);
+        usleep(60000);                          /* 60 ms — allow one-shot to complete */
+        led->setBlink(led->impl, 100, 100);
+        usleep(420000);                         /* 420 ms — observe blink */
+        led->setConstant(led->impl, HAL_LED_MODE_OFF);
+    }
 }
 
 
 /************************
- *CODE SNIPPET GRAVEYARD 
+ *CODE SNIPPET GRAVEYARD
  ************************/
 
 // node = rb_find(app.nodeTree, "MAIN");

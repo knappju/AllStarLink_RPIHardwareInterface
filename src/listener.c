@@ -41,7 +41,13 @@ int initListener(Listener *lMem)
     printf("Node Number: %s\n", lMem->NodeNumber);
 
     pthread_mutex_init(&lMem->listenerLock, NULL);
-    pthread_create(&lMem->id, NULL, listener, lMem);
+
+    if (pthread_create(&lMem->id, NULL, listener, lMem) != 0) {
+        free(lMem->NodeNumber);
+        lMem->NodeNumber = NULL;
+        pthread_mutex_destroy(&lMem->listenerLock);
+        return -1;
+    }
 
     return 0;
 }
