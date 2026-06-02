@@ -9,7 +9,7 @@
  * driver (GPIO, MCP23017, etc.) backs a given device.
  *
  * Typical usage:
- *   HAL_t *hal = initHAL();
+ *   HAL *hal = initHAL();
  *   HALLoadConfig(hal, HARDWARE_DEFINITIONS_FILE_PATH);
  *   int idx = HALFindLedByName(hal, "STATUS_LED");
  *   HALLedSetBlink(hal, idx, 500, 500);
@@ -92,15 +92,14 @@ typedef struct {
     int              numButtons;
     HAL_Led_t       *leds;        /* heap-allocated array, length = numLeds */
     int              numLeds;
-} HAL_t;
+} HAL;
 
 /* ── Lifecycle ──────────────────────────────────────────────────────────── */
 
 /**
- * @brief Allocate a HAL_t, call wiringPiSetup(), and initialize the mutex.
- * @return Pointer to new HAL on success, NULL on failure.
+ * @brief Allocate a HAL, call wiringPiSetup(), and initialize the mutex.
  */
-HAL_t      *initHAL(void);
+int initHAL(HAL *halMem); /* alternative that takes caller-allocated memory */
 
 /**
  * @brief Load hardware definitions from a JSON config file.
@@ -113,13 +112,13 @@ HAL_t      *initHAL(void);
  * @param configFilePath Path to the JSON hardware definitions file.
  * @return HAL_SUCCESS, or a HALStatus_t error code.
  */
-HALStatus_t HALLoadConfig(HAL_t *hal, const char *configFilePath);
+HALStatus_t HALLoadConfig(HAL *hal, const char *configFilePath);
 
 /**
  * @brief Deinit all buttons and LEDs, destroy the mutex, and free the HAL.
  * @param hal HAL instance returned by initHAL().
  */
-HALStatus_t deinitHAL(HAL_t *hal);
+HALStatus_t deinitHAL(HAL *hal);
 
 /* ── Button API ─────────────────────────────────────────────────────────── */
 
@@ -127,13 +126,13 @@ HALStatus_t deinitHAL(HAL_t *hal);
  * @brief Find a button by its logical name.
  * @return Array index on success, -1 if not found.
  */
-int         HALFindButtonByName    (HAL_t *hal, const char *logicalName);
-HALStatus_t HALButtonRead          (HAL_t *hal, int index, uint8_t *state);
-HALStatus_t HALButtonGetTimeInState(HAL_t *hal, int index, unsigned long *timeInState);
-HALStatus_t HALButtonRegisterCB    (HAL_t *hal, int index, void (*cb)(uint8_t state));
-HALStatus_t HALButtonUnregisterCB  (HAL_t *hal, int index);
-HALStatus_t HALButtonEnableCB      (HAL_t *hal, int index);
-HALStatus_t HALButtonDisableCB     (HAL_t *hal, int index);
+int         HALFindButtonByName    (HAL *hal, const char *logicalName);
+HALStatus_t HALButtonRead          (HAL *hal, int index, uint8_t *state);
+HALStatus_t HALButtonGetTimeInState(HAL *hal, int index, unsigned long *timeInState);
+HALStatus_t HALButtonRegisterCB    (HAL *hal, int index, void (*cb)(uint8_t state));
+HALStatus_t HALButtonUnregisterCB  (HAL *hal, int index);
+HALStatus_t HALButtonEnableCB      (HAL *hal, int index);
+HALStatus_t HALButtonDisableCB     (HAL *hal, int index);
 
 /* ── LED API ────────────────────────────────────────────────────────────── */
 
@@ -141,10 +140,10 @@ HALStatus_t HALButtonDisableCB     (HAL_t *hal, int index);
  * @brief Find an LED by its logical name.
  * @return Array index on success, -1 if not found.
  */
-int         HALFindLedByName(HAL_t *hal, const char *logicalName);
-HALStatus_t HALLedSetConstant(HAL_t *hal, int index, HALLedMode_t mode);
-HALStatus_t HALLedSetOneShot (HAL_t *hal, int index, unsigned long durationMs);
-HALStatus_t HALLedSetBlink   (HAL_t *hal, int index, unsigned long onDurationMs, unsigned long offDurationMs);
+int         HALFindLedByName(HAL *hal, const char *logicalName);
+HALStatus_t HALLedSetConstant(HAL *hal, int index, HALLedMode_t mode);
+HALStatus_t HALLedSetOneShot (HAL *hal, int index, unsigned long durationMs);
+HALStatus_t HALLedSetBlink   (HAL *hal, int index, unsigned long onDurationMs, unsigned long offDurationMs);
 
 
 void buttonCallbackTest(uint8_t state);

@@ -92,22 +92,26 @@ static int parseInterruptEdge(const char *str) {
 
 /* ── Lifecycle ──────────────────────────────────────────────────────────── */
 
-HAL_t *initHAL(void)
+int initHAL(HAL *halMem)
 {
+    if (halMem == NULL) {
+        return -1;
+    }
+
     wiringPiSetup();
 
-    HAL_t *hal = calloc(1, sizeof(HAL_t));
-    if (!hal) return NULL;
+    HAL *hal = halMem ? halMem : calloc(1, sizeof(HAL));
+    if (!hal) return -1;
 
     if (pthread_mutex_init(&hal->HALLock, NULL) != 0) {
         free(hal);
-        return NULL;
+        return -1;
     }
 
-    return hal;
+    return 0;
 }
 
-HALStatus_t deinitHAL(HAL_t *hal)
+HALStatus_t deinitHAL(HAL *hal)
 {
     if (!hal) return HAL_ERROR_NULL_POINTER;
 
@@ -128,7 +132,7 @@ HALStatus_t deinitHAL(HAL_t *hal)
     return HAL_SUCCESS;
 }
 
-HALStatus_t HALLoadConfig(HAL_t *hal, const char *configFilePath)
+HALStatus_t HALLoadConfig(HAL *hal, const char *configFilePath)
 {
     if (!hal || !configFilePath) return HAL_ERROR_NULL_POINTER;
 
@@ -237,7 +241,7 @@ HALStatus_t HALLoadConfig(HAL_t *hal, const char *configFilePath)
 
 /* ── Button API ─────────────────────────────────────────────────────────── */
 
-int HALFindButtonByName(HAL_t *hal, const char *logicalName)
+int HALFindButtonByName(HAL *hal, const char *logicalName)
 {
     if (!hal || !logicalName) return -1;
     for (int i = 0; i < hal->numButtons; i++) {
@@ -246,42 +250,42 @@ int HALFindButtonByName(HAL_t *hal, const char *logicalName)
     return -1;
 }
 
-HALStatus_t HALButtonRead(HAL_t *hal, int index, uint8_t *state)
+HALStatus_t HALButtonRead(HAL *hal, int index, uint8_t *state)
 {
     if (!hal || !state || index < 0 || index >= hal->numButtons) return HAL_ERROR_NULL_POINTER;
     HAL_Button_t *b = &hal->buttons[index];
     return b->read(b->impl, state);
 }
 
-HALStatus_t HALButtonGetTimeInState(HAL_t *hal, int index, unsigned long *timeInState)
+HALStatus_t HALButtonGetTimeInState(HAL *hal, int index, unsigned long *timeInState)
 {
     if (!hal || !timeInState || index < 0 || index >= hal->numButtons) return HAL_ERROR_NULL_POINTER;
     HAL_Button_t *b = &hal->buttons[index];
     return b->getTimeInState(b->impl, timeInState);
 }
 
-HALStatus_t HALButtonRegisterCB(HAL_t *hal, int index, void (*cb)(uint8_t state))
+HALStatus_t HALButtonRegisterCB(HAL *hal, int index, void (*cb)(uint8_t state))
 {
     if (!hal || index < 0 || index >= hal->numButtons) return HAL_ERROR_NULL_POINTER;
     HAL_Button_t *b = &hal->buttons[index];
     return b->registerCB(b->impl, cb);
 }
 
-HALStatus_t HALButtonUnregisterCB(HAL_t *hal, int index)
+HALStatus_t HALButtonUnregisterCB(HAL *hal, int index)
 {
     if (!hal || index < 0 || index >= hal->numButtons) return HAL_ERROR_NULL_POINTER;
     HAL_Button_t *b = &hal->buttons[index];
     return b->unregisterCB(b->impl);
 }
 
-HALStatus_t HALButtonEnableCB(HAL_t *hal, int index)
+HALStatus_t HALButtonEnableCB(HAL *hal, int index)
 {
     if (!hal || index < 0 || index >= hal->numButtons) return HAL_ERROR_NULL_POINTER;
     HAL_Button_t *b = &hal->buttons[index];
     return b->enableCB(b->impl);
 }
 
-HALStatus_t HALButtonDisableCB(HAL_t *hal, int index)
+HALStatus_t HALButtonDisableCB(HAL *hal, int index)
 {
     if (!hal || index < 0 || index >= hal->numButtons) return HAL_ERROR_NULL_POINTER;
     HAL_Button_t *b = &hal->buttons[index];
@@ -290,7 +294,7 @@ HALStatus_t HALButtonDisableCB(HAL_t *hal, int index)
 
 /* ── LED API ────────────────────────────────────────────────────────────── */
 
-int HALFindLedByName(HAL_t *hal, const char *logicalName)
+int HALFindLedByName(HAL *hal, const char *logicalName)
 {
     if (!hal || !logicalName) return -1;
     for (int i = 0; i < hal->numLeds; i++) {
@@ -299,21 +303,21 @@ int HALFindLedByName(HAL_t *hal, const char *logicalName)
     return -1;
 }
 
-HALStatus_t HALLedSetConstant(HAL_t *hal, int index, HALLedMode_t mode)
+HALStatus_t HALLedSetConstant(HAL *hal, int index, HALLedMode_t mode)
 {
     if (!hal || index < 0 || index >= hal->numLeds) return HAL_ERROR_NULL_POINTER;
     HAL_Led_t *l = &hal->leds[index];
     return l->setConstant(l->impl, mode);
 }
 
-HALStatus_t HALLedSetOneShot(HAL_t *hal, int index, unsigned long durationMs)
+HALStatus_t HALLedSetOneShot(HAL *hal, int index, unsigned long durationMs)
 {
     if (!hal || index < 0 || index >= hal->numLeds) return HAL_ERROR_NULL_POINTER;
     HAL_Led_t *l = &hal->leds[index];
     return l->setOneShot(l->impl, durationMs);
 }
 
-HALStatus_t HALLedSetBlink(HAL_t *hal, int index, unsigned long onDurationMs, unsigned long offDurationMs)
+HALStatus_t HALLedSetBlink(HAL *hal, int index, unsigned long onDurationMs, unsigned long offDurationMs)
 {
     if (!hal || index < 0 || index >= hal->numLeds) return HAL_ERROR_NULL_POINTER;
     HAL_Led_t *l = &hal->leds[index];
