@@ -1,6 +1,6 @@
 {
-    "appConfigVersion": "1.0",
-    "mainTxLed": "led1",
+    "appConfigVersion": "2.0",
+    "mainTxLed": "none",
     "mainRxLed": "none",
     "mainAux1Led": "none",
     "mainAux2Led": "none",
@@ -9,33 +9,37 @@
         {
             "channelNumber": 1,
             "node": "2324",
-            "conLed" : "led2",
+            "con1Led" : "none",
+            "con2Led" : "none",
             "txLed": "none",
-            "rxLed": "led3",
+            "rxLed": "none",
             "button": "button1"
         },
         {
             "channelNumber": 2,
             "node": "2462",
-            "conLed" : "led4",
-            "txLed": "none",
-            "rxLed": "led5",
+            "con1Led" : "led1",
+            "con2Led" : "led2",
+            "txLed": "led3",
+            "rxLed": "led4",
             "button": "button2"
         },
         {
             "channelNumber": 3,
             "node": "472440",
-            "conLed" : "led6",
-            "txLed": "none",
-            "rxLed": "led7",
+            "con1Led" : "led5",
+            "con2Led" : "led6",
+            "txLed": "led7",
+            "rxLed": "led8",
             "button": "button3"
         },
         {
             "channelNumber": 4,
             "node": "27339",
-            "conLed" : "led8",
-            "txLed": "none",
-            "rxLed": "led9",
+            "con1Led" : "led9",
+            "con2Led" : "led10",
+            "txLed": "led11",
+            "rxLed": "led12",
             "button": "button4"
         }
     ]
