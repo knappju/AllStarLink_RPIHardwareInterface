@@ -27,7 +27,6 @@
 #include <string.h>
 #include <stdbool.h>
 #include "globalDefines.h"
-#include "json-c/json.h"
 
 typedef enum {
     HAL_SUCCESS               =  0,
@@ -128,6 +127,7 @@ HALStatus_t deinitHAL(HAL *hal);
  * @return Array index on success, -1 if not found.
  */
 int         HALFindButtonByName    (HAL *hal, const char *logicalName);
+const char *HALGetButtonName       (HAL *hal, int index);
 HALStatus_t HALButtonRead          (HAL *hal, int index, uint8_t *state);
 HALStatus_t HALButtonGetTimeInState(HAL *hal, int index, unsigned long *timeInState);
 HALStatus_t HALButtonRegisterCB    (HAL *hal, int index, void (*cb)(uint8_t state));
@@ -142,6 +142,7 @@ HALStatus_t HALButtonDisableCB     (HAL *hal, int index);
  * @return Array index on success, -1 if not found.
  */
 int         HALFindLedByName(HAL *hal, const char *logicalName);
+const char *HALGetLedName   (HAL *hal, int index);
 HALStatus_t HALLedSetConstant(HAL *hal, int index, HALLedMode_t mode);
 HALStatus_t HALLedSetOneShot (HAL *hal, int index, unsigned long durationMs);
 HALStatus_t HALLedSetBlink   (HAL *hal, int index, unsigned long onDurationMs, unsigned long offDurationMs);
