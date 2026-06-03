@@ -7,7 +7,7 @@
 #ifndef GLOBALDEFINES_H
 #define GLOBALDEFINES_H
 
-#define SOFTWARE_REVISION_NUMBER "0.5.0.0"
+#define SOFTWARE_REVISION_NUMBER "1.0.0.0"
 
 /* TODO: make these dynamic based on the hardware definitions file. */
 #define NUM_OF_LEDS    12
