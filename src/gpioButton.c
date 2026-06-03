@@ -27,13 +27,13 @@ static void (*button_isr_table[])(void) = {
 #undef X
 };
 
-/* Maps pin number (1-based) to its gpioButtonMemory_t; populated by
+/* Maps wiringPi pin number (0-indexed) to its gpioButtonMemory_t; populated by
  * gpioButtonInit() and consulted by the shared ISR handler. */
 static gpioButtonMemory_t *buttonMemLookUp[40] = {NULL};
 
 gpioButtonMemory_t *gpioButtonInit(int pin, int pull, int debounceTimeMs, int interruptEdge)
 {
-    if (pin < 0 || pin > 30) {
+    if (pin < 0 || pin > 39) {
         return NULL; /* invalid pin number */
     }
     if (pull != PUD_OFF && pull != PUD_UP && pull != PUD_DOWN) {
@@ -54,7 +54,7 @@ gpioButtonMemory_t *gpioButtonInit(int pin, int pull, int debounceTimeMs, int in
         return NULL;
     }
  
-    buttonMemLookUp[pin - 1] = buttonMemory;
+    buttonMemLookUp[pin] = buttonMemory;
  
     buttonMemory->pin             = pin;
     buttonMemory->pull            = pull;
@@ -83,9 +83,7 @@ gpioButtonMemory_t *gpioButtonInit(int pin, int pull, int debounceTimeMs, int in
         return NULL;
     }
  
-    /* Register the pin-specific ISR stub. The table is 0-indexed while pin
-     * numbers are 1-indexed, hence the (pin - 1) offset. */
-    wiringPiISR(pin, interruptEdge, button_isr_table[pin - 1]);
+    wiringPiISR(pin, interruptEdge, button_isr_table[pin]);
  
     return buttonMemory;
 }
@@ -110,7 +108,7 @@ gpioButtonStatus_t gpioButtonDeinit(void *buttonMemory)
      * the pin mode to INPUT stops edges from being detected. */
     pinMode(btnMem->pin, INPUT);
  
-    buttonMemLookUp[btnMem->pin - 1] = NULL;
+    buttonMemLookUp[btnMem->pin] = NULL;
 
     free(btnMem);
     return GPIO_BUTTON_SUCCESS;
@@ -225,9 +223,9 @@ static void debounceTimerCb(union sigval sv)
  * the full window. */
 static void buttonInterupt(int pin)
 {
-    if (buttonMemLookUp[pin - 1] == NULL) return;
- 
-    gpioButtonMemory_t *btnMem = buttonMemLookUp[pin - 1];
+    if (buttonMemLookUp[pin] == NULL) return;
+
+    gpioButtonMemory_t *btnMem = buttonMemLookUp[pin];
  
     struct itimerspec ts = {
         .it_value = {

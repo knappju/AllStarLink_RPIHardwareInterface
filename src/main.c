@@ -82,6 +82,8 @@ int main(void)
         return -1;
     }
 
+    testLeds(&mem->hal); /* optional: confirm LEDs are working before entering the main loop */
+
     runApp(mem);
     deinitApp(mem);
 
