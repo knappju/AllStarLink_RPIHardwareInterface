@@ -48,6 +48,8 @@ int main(void)
 {
     AppMemory *mem = NULL;
 
+    /* Register signal handlers before initApp so the process can be
+     * interrupted cleanly even if startup takes time. */
     if (initSignals() == -1)
         exit(EXIT_FAILURE);
 
@@ -70,6 +72,13 @@ int main(void)
 
 /* ── Signal handling ──────────────────────────────────────────────────────── */
 
+/**
+ * @brief Async-signal-safe handler for SIGINT, SIGTERM, and SIGHUP.
+ *
+ * Only assigns to a volatile sig_atomic_t — the only operation guaranteed
+ * safe inside a signal handler. The main loop and threads poll shutdownFlag
+ * and perform their own cleanup before exiting.
+ */
 static void onShutdownSignal(int signal_number)
 {
     (void)signal_number;
@@ -112,6 +121,8 @@ static int initApp(AppMemory **mem)
 {
     int result = 0;
 
+    /* Check all config files before allocating anything so every missing file
+     * is reported in one run rather than failing on the first one found. */
     if (checkFileExists(HARDWARE_DEFINITIONS_FILE_PATH) == -1) {
         fprintf(stderr, "Error: Hardware definitions file not found or corrupted.\n");
         result |= HARDWARE_DEFINITION_FILE_PATH_INIT_ERROR;
@@ -191,9 +202,9 @@ static void deinitApp(AppMemory *mem)
         deinitHAL(&mem->hal);
 
     if (mem->listener.initialized) {
-        mem->listener.halt = true;
+        mem->listener.halt = true;          /* signal the thread to exit its loop */
         pthread_join(mem->listener.id, NULL);
-        pthread_mutex_destroy(&mem->listener.listenerLock);
+        pthread_mutex_destroy(&mem->listener.listenerLock); /* safe only after join */
     }
 
     if (mem->nodeTree)
@@ -204,6 +215,15 @@ static void deinitApp(AppMemory *mem)
 
 /* ── Event loop ───────────────────────────────────────────────────────────── */
 
+/**
+ * @brief Run the main event loop until a shutdown signal is received.
+ *
+ * Polls the listener's action queue and dispatches each entry to
+ * findAndUpdateNodeForAction(). Sleeps briefly when the queue is empty
+ * to avoid spinning the CPU.
+ *
+ * @param mem  Fully initialized application memory.
+ */
 static void runApp(AppMemory *mem)
 {
     while (!shutdownFlag) {
@@ -230,6 +250,8 @@ static void findAndUpdateNodeForAction(rbtree *nodeTree, Listener *lMem, LogActi
 {
     rbnode *node = rb_find(nodeTree, action->name);
 
+    /* Node tree reads and writes are lock-free: only the main thread ever
+     * touches nodeTree, so no synchronization is needed here. */
     if (node != NULL) {
         updateASLNode(node->data, action->LastUpdate, action->action);
     } else {
@@ -238,6 +260,8 @@ static void findAndUpdateNodeForAction(rbtree *nodeTree, Listener *lMem, LogActi
         rb_insert(nodeTree, newNode);
     }
 
+    /* Lock only for queue removal — the listener thread may enqueue new
+     * actions concurrently, so the shared queue requires protection. */
     pthread_mutex_lock(&lMem->listenerLock);
     TAILQ_REMOVE(&lMem->recentActions, action, entries);
     lMem->queueSize--;
@@ -263,6 +287,14 @@ static int checkFileExists(const char *filename)
 
 /* ── Debug ────────────────────────────────────────────────────────────────── */
 
+/**
+ * @brief Cycle every configured LED through on, off, one-shot, and blink modes.
+ *
+ * Used during hardware bring-up to confirm each LED is wired and responding
+ * correctly. Not called in normal operation.
+ *
+ * @param hal  Fully initialized and configured HAL instance.
+ */
 static void testLeds(HAL *hal)
 {
     if (!hal->leds || hal->numLeds == 0) {
