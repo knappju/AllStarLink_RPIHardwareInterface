@@ -20,11 +20,22 @@ CC = gcc
 CFLAGS = -I$(INCLUDE_DIR) -Wall -Wextra -g
 LIBS = -lwiringPi -ljson-c
 
+# --- Valgrind Settings ---
+VALGRIND_SUPP  = asl-interface.supp
+VALGRIND_FLAGS = --leak-check=full \
+                 --track-origins=yes \
+                 --error-exitcode=1 \
+                 --suppressions=$(VALGRIND_SUPP)
+
 # --- Rules ---
 all: check-dependencies $(OBJECT_FILES) stop-service cp-service cp-configs $(TARGET_FILE) run-service
 
 debug: check-dependencies $(OBJECT_FILES) stop-service cp-configs $(TARGET_FILE)
 	@echo "Debug build complete. You can run the program with: sudo $(TARGET_FILE)"
+
+debugValgrind: debug
+	@echo "Running under Valgrind..."
+	sudo valgrind $(VALGRIND_FLAGS) $(TARGET_FILE)
 
 $(TARGET_FILE): $(OBJECT_FILES)
 	$(CC) $(OBJECT_FILES) -o $@ $(LIBS)
@@ -106,4 +117,4 @@ run-service:
 clean:
 	rm -rf $(OBJECT_DIR)
 
-.PHONY: all clean debug check-dependencies stop-service cp-service run-service cp-configs
+.PHONY: all clean debug debugValgrind check-dependencies stop-service cp-service run-service cp-configs

@@ -1,0 +1,37 @@
+# Valgrind suppressions for asl-interface
+#
+# Both suppressions cover library-internal threads that are cleaned up at
+# process exit and are not reachable from application code. They show as
+# "possibly lost" because Valgrind only sees an interior pointer into the
+# TLS block, not the block's base address.
+
+# glibc lazily creates one helper thread the first time timer_create() is
+# called with SIGEV_THREAD. It lives for the process lifetime and is freed
+# by glibc's own atexit handlers.
+{
+   glibc_timer_sigev_thread_helper
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:calloc
+   fun:calloc
+   fun:allocate_dtv
+   fun:_dl_allocate_tls
+   fun:allocate_stack
+   fun:pthread_create*
+   fun:__timer_start_helper_thread
+}
+
+# wiringPiISR() creates one internal pthread per registered pin and provides
+# no unregister API. These threads are managed entirely by libwiringPi.
+{
+   wiringpi_isr_thread
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:calloc
+   fun:calloc
+   fun:allocate_dtv
+   fun:_dl_allocate_tls
+   fun:allocate_stack
+   fun:pthread_create*
+   fun:wiringPiISRInternal
+}

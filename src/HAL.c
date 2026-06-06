@@ -17,11 +17,7 @@
 #include "HAL.h"
 #include "gpioButton.h"
 #include "gpioLed.h"
-
-/* ── Private helpers ────────────────────────────────────────────────────── */
-
-static char        *jsoncStripComments(const char *jsonString);
-static json_object *parseJSONFile(const char *filePath);
+#include "jsonConfig.h"
 
 /* ── GPIO button vtable wrappers ────────────────────────────────────────── */
 
@@ -92,22 +88,21 @@ static int parseInterruptEdge(const char *str) {
 
 /* ── Lifecycle ──────────────────────────────────────────────────────────── */
 
-HAL_t *initHAL(void)
+int initHAL(HAL *halMem)
 {
-    wiringPiSetup();
-
-    HAL_t *hal = calloc(1, sizeof(HAL_t));
-    if (!hal) return NULL;
-
-    if (pthread_mutex_init(&hal->HALLock, NULL) != 0) {
-        free(hal);
-        return NULL;
+    if (halMem == NULL) {
+        return -1;
     }
 
-    return hal;
+    wiringPiSetup();
+
+    if (pthread_mutex_init(&halMem->HALLock, NULL) != 0)
+        return -1;
+
+    return 0;
 }
 
-HALStatus_t deinitHAL(HAL_t *hal)
+HALStatus_t deinitHAL(HAL *hal)
 {
     if (!hal) return HAL_ERROR_NULL_POINTER;
 
@@ -124,11 +119,10 @@ HALStatus_t deinitHAL(HAL_t *hal)
     free(hal->leds);
 
     pthread_mutex_destroy(&hal->HALLock);
-    free(hal);
     return HAL_SUCCESS;
 }
 
-HALStatus_t HALLoadConfig(HAL_t *hal, const char *configFilePath)
+HALStatus_t HALLoadConfig(HAL *hal, const char *configFilePath)
 {
     if (!hal || !configFilePath) return HAL_ERROR_NULL_POINTER;
 
@@ -237,7 +231,7 @@ HALStatus_t HALLoadConfig(HAL_t *hal, const char *configFilePath)
 
 /* ── Button API ─────────────────────────────────────────────────────────── */
 
-int HALFindButtonByName(HAL_t *hal, const char *logicalName)
+int HALFindButtonByName(HAL *hal, const char *logicalName)
 {
     if (!hal || !logicalName) return -1;
     for (int i = 0; i < hal->numButtons; i++) {
@@ -246,42 +240,48 @@ int HALFindButtonByName(HAL_t *hal, const char *logicalName)
     return -1;
 }
 
-HALStatus_t HALButtonRead(HAL_t *hal, int index, uint8_t *state)
+const char *HALGetButtonName(HAL *hal, int index)
+{
+    if (!hal || index < 0 || index >= hal->numButtons) return NULL;
+    return hal->buttons[index].logicalName;
+}
+
+HALStatus_t HALButtonRead(HAL *hal, int index, uint8_t *state)
 {
     if (!hal || !state || index < 0 || index >= hal->numButtons) return HAL_ERROR_NULL_POINTER;
     HAL_Button_t *b = &hal->buttons[index];
     return b->read(b->impl, state);
 }
 
-HALStatus_t HALButtonGetTimeInState(HAL_t *hal, int index, unsigned long *timeInState)
+HALStatus_t HALButtonGetTimeInState(HAL *hal, int index, unsigned long *timeInState)
 {
     if (!hal || !timeInState || index < 0 || index >= hal->numButtons) return HAL_ERROR_NULL_POINTER;
     HAL_Button_t *b = &hal->buttons[index];
     return b->getTimeInState(b->impl, timeInState);
 }
 
-HALStatus_t HALButtonRegisterCB(HAL_t *hal, int index, void (*cb)(uint8_t state))
+HALStatus_t HALButtonRegisterCB(HAL *hal, int index, void (*cb)(uint8_t state))
 {
     if (!hal || index < 0 || index >= hal->numButtons) return HAL_ERROR_NULL_POINTER;
     HAL_Button_t *b = &hal->buttons[index];
     return b->registerCB(b->impl, cb);
 }
 
-HALStatus_t HALButtonUnregisterCB(HAL_t *hal, int index)
+HALStatus_t HALButtonUnregisterCB(HAL *hal, int index)
 {
     if (!hal || index < 0 || index >= hal->numButtons) return HAL_ERROR_NULL_POINTER;
     HAL_Button_t *b = &hal->buttons[index];
     return b->unregisterCB(b->impl);
 }
 
-HALStatus_t HALButtonEnableCB(HAL_t *hal, int index)
+HALStatus_t HALButtonEnableCB(HAL *hal, int index)
 {
     if (!hal || index < 0 || index >= hal->numButtons) return HAL_ERROR_NULL_POINTER;
     HAL_Button_t *b = &hal->buttons[index];
     return b->enableCB(b->impl);
 }
 
-HALStatus_t HALButtonDisableCB(HAL_t *hal, int index)
+HALStatus_t HALButtonDisableCB(HAL *hal, int index)
 {
     if (!hal || index < 0 || index >= hal->numButtons) return HAL_ERROR_NULL_POINTER;
     HAL_Button_t *b = &hal->buttons[index];
@@ -290,7 +290,7 @@ HALStatus_t HALButtonDisableCB(HAL_t *hal, int index)
 
 /* ── LED API ────────────────────────────────────────────────────────────── */
 
-int HALFindLedByName(HAL_t *hal, const char *logicalName)
+int HALFindLedByName(HAL *hal, const char *logicalName)
 {
     if (!hal || !logicalName) return -1;
     for (int i = 0; i < hal->numLeds; i++) {
@@ -299,112 +299,39 @@ int HALFindLedByName(HAL_t *hal, const char *logicalName)
     return -1;
 }
 
-HALStatus_t HALLedSetConstant(HAL_t *hal, int index, HALLedMode_t mode)
+const char *HALGetLedName(HAL *hal, int index)
+{
+    if (!hal || index < 0 || index >= hal->numLeds) return NULL;
+    return hal->leds[index].logicalName;
+}
+
+HALStatus_t HALLedSetConstant(HAL *hal, int index, HALLedMode_t mode)
 {
     if (!hal || index < 0 || index >= hal->numLeds) return HAL_ERROR_NULL_POINTER;
     HAL_Led_t *l = &hal->leds[index];
     return l->setConstant(l->impl, mode);
 }
 
-HALStatus_t HALLedSetOneShot(HAL_t *hal, int index, unsigned long durationMs)
+HALStatus_t HALLedSetOneShot(HAL *hal, int index, unsigned long durationMs)
 {
     if (!hal || index < 0 || index >= hal->numLeds) return HAL_ERROR_NULL_POINTER;
     HAL_Led_t *l = &hal->leds[index];
     return l->setOneShot(l->impl, durationMs);
 }
 
-HALStatus_t HALLedSetBlink(HAL_t *hal, int index, unsigned long onDurationMs, unsigned long offDurationMs)
+HALStatus_t HALLedSetBlink(HAL *hal, int index, unsigned long onDurationMs, unsigned long offDurationMs)
 {
     if (!hal || index < 0 || index >= hal->numLeds) return HAL_ERROR_NULL_POINTER;
     HAL_Led_t *l = &hal->leds[index];
     return l->setBlink(l->impl, onDurationMs, offDurationMs);
 }
 
-/* ── JSON parsing ───────────────────────────────────────────────────────── */
 
-/* Return a heap-allocated copy of jsonString with all C-style // and block
- * comments removed. The caller must free() the result.
- * String literals are left intact (comment markers inside strings are kept). */
-static char *jsoncStripComments(const char *jsonString)
-{
-    if (!jsonString) return NULL;
+int globalcounter = 1;
 
-    size_t len = strlen(jsonString);
-    char *out = malloc(len + 1);
-    if (!out) return NULL;
-
-    size_t i = 0, j = 0;
-    int in_string = 0;
-
-    while (i < len) {
-        char c = jsonString[i];
-
-        /* Track whether we are inside a JSON string so we do not mistake
-         * a "//" inside a string value for a comment marker. */
-        if (c == '"' && (i == 0 || jsonString[i - 1] != '\\')) {
-            in_string = !in_string;
-            out[j++] = c;
-            i++;
-            continue;
-        }
-
-        if (!in_string) {
-            /* Line comment: skip to end of line. */
-            if (c == '/' && i + 1 < len && jsonString[i + 1] == '/') {
-                while (i < len && jsonString[i] != '\n') i++;
-                continue;
-            }
-            if (c == '/' && i + 1 < len && jsonString[i + 1] == '*') {
-                i += 2;
-                while (i + 1 < len && !(jsonString[i] == '*' && jsonString[i + 1] == '/')) i++;
-                i += 2;
-                continue;
-            }
-        }
-
-        out[j++] = c;
-        i++;
+void buttonCallbackTest(uint8_t state){
+    
+    if(state == 0){
+        printf("globalcounter: %d\n", globalcounter++);
     }
-
-    out[j] = '\0';
-    return out;
-}
-
-/* Read filePath into memory, strip comments, and parse with json-c. */
-static json_object *parseJSONFile(const char *filePath)
-{
-    if (!filePath) return NULL;
-
-    FILE *f = fopen(filePath, "rb");
-    if (!f) { perror("parseJSONFile: fopen"); return NULL; }
-
-    fseek(f, 0, SEEK_END);
-    long size = ftell(f);
-    rewind(f);
-
-    if (size <= 0) {
-        fprintf(stderr, "parseJSONFile: file empty\n");
-        fclose(f);
-        return NULL;
-    }
-
-    char *raw = malloc((size_t)size + 1);
-    if (!raw) { fclose(f); return NULL; }
-    fread(raw, 1, (size_t)size, f);
-    raw[size] = '\0';
-    fclose(f);
-
-    char *clean = jsoncStripComments(raw);
-    free(raw);
-    if (!clean) return NULL;
-
-    struct json_object *root = json_tokener_parse(clean);
-    free(clean);
-
-    if (!root) {
-        fprintf(stderr, "parseJSONFile: json_tokener_parse failed\n");
-        return NULL;
-    }
-
-    return root;
 }

@@ -7,11 +7,7 @@
 #ifndef GLOBALDEFINES_H
 #define GLOBALDEFINES_H
 
-#define SOFTWARE_REVISION_NUMBER "1.0.0.0"
-
-/* TODO: make these dynamic based on the hardware definitions file. */
-#define NUM_OF_LEDS    12
-#define NUM_OF_BUTTONS  4
+#define SOFTWARE_REVISION_NUMBER "2.0.0.0"
 
 /* Asterisk log action strings that are relevant to node state tracking. */
 #define ACTION_FILTERS {"RXKEY", "TXKEY", "RXUNKEY", "TXUNKEY", "LINKTRX", "LINKMONITOR", "LINKDISC"}
@@ -34,5 +30,6 @@
 #define APP_MEMORY_ALLOCATION_INIT_ERROR          0x0010
 #define RB_TREE_ALLOCATION_INIT_ERROR             0x0020
 #define LISTENER_THREAD_INIT_ERROR                0x0040
+#define HAL_INIT_ERROR                            0x0080
 
 #endif /* GLOBALDEFINES_H */

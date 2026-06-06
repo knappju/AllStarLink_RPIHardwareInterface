@@ -15,7 +15,7 @@ static void gpioLedWritePin(union sigval sv);
 
 gpioLedMemory_t *gpioLedInit(int pin)
 {
-    if (pin < 1 || pin > 40) {
+    if (pin < 0 || pin > 30) {
         return NULL; /* invalid pin number */
     }
 
@@ -60,14 +60,20 @@ gpioLedStatus_t gpioLedDeinit(void *ledMemory)
 
     gpioLedMemory_t *ledMem = (gpioLedMemory_t *)ledMemory;
 
-    /* Signal the timer callback to stop before destroying the memory it uses. */
-    pthread_mutex_lock(&ledMem->lock);
-    ledMem->valid = false;
-    pthread_mutex_unlock(&ledMem->lock);
-
+    //delete any timers if they exist
     if (ledMem->timerId != 0) {
         timer_delete(ledMem->timerId);
     }
+
+    /* Signal the timer callback to stop before destroying the memory it uses. */
+    pthread_mutex_lock(&ledMem->lock);
+    ledMem->valid = false;
+    
+    //reset the pin to an input.
+    digitalWrite(ledMem->pin, LOW);
+    pinMode(ledMem->pin, INPUT);
+
+    pthread_mutex_unlock(&ledMem->lock);
 
     free(ledMem);
     return GPIO_LED_SUCCESS;

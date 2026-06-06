@@ -12,6 +12,8 @@
 #define GPIO_BUTTON_H
 
 #include <wiringPi.h>
+#include <signal.h>
+#include <time.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -30,11 +32,12 @@ typedef struct {
     int pin;                          /* physical RPi pin number (1-40) */
     int pull;                         /* wiringPi pull resistor: PUD_UP/DOWN/OFF */
     int debounceTimeMs;               /* minimum ms between accepted interrupts */
-    int state;                        /* most recently debounced pin level */
-    unsigned long lastInterruptTime;  /* millis() timestamp of last accepted ISR */
     int interruptEdge;                /* INT_EDGE_RISING / FALLING / BOTH */
     void (*cb)(uint8_t state);        /* optional user callback, called on state change */
     bool cbEnabled;                   /* when false, cb is suppressed even if registered */
+    int state;                        /* most recently debounced pin level */
+    unsigned long lastInterruptTime;  /* millis() timestamp of last accepted ISR */
+    timer_t debounceTimer;
 } gpioButtonMemory_t;
 
 /**
@@ -89,9 +92,9 @@ gpioButtonStatus_t gpioButtonDisableCB(void *buttonMemory);
  * stubs delegate immediately to the shared buttonInterupt() handler.
  */
 #define BUTTON_ISR_LIST \
-    X(1)  X(2)  X(3)  X(4)  X(5)  X(6)  X(7)  X(8)  X(9)  X(10) \
-    X(11) X(12) X(13) X(14) X(15) X(16) X(17) X(18) X(19) X(20) \
-    X(21) X(22) X(23) X(24) X(25) X(26) X(27) X(28) X(29) X(30) \
-    X(31) X(32) X(33) X(34) X(35) X(36) X(37) X(38) X(39) X(40)
+    X(0)  X(1)  X(2)  X(3)  X(4)  X(5)  X(6)  X(7)  X(8)  X(9)  \
+    X(10) X(11) X(12) X(13) X(14) X(15) X(16) X(17) X(18) X(19) \
+    X(20) X(21) X(22) X(23) X(24) X(25) X(26) X(27) X(28) X(29) \
+    X(30) X(31) X(32) X(33) X(34) X(35) X(36) X(37) X(38) X(39)
 
 #endif /* GPIO_BUTTON_H */
