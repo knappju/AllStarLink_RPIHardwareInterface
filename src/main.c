@@ -82,7 +82,7 @@ int main(void)
         return -1;
     }
 
-    testLeds(&mem->hal); /* optional: confirm LEDs are working before entering the main loop */
+    testLeds(&mem->hal);
 
     runApp(mem);
     deinitApp(mem);
@@ -482,14 +482,6 @@ static int checkFileExists(const char *filename)
 
 /* ── Debug ────────────────────────────────────────────────────────────────── */
 
-/**
- * @brief Cycle every configured LED through on, off, one-shot, and blink modes.
- *
- * Used during hardware bring-up to confirm each LED is wired and responding
- * correctly. Not called in normal operation.
- *
- * @param hal  Fully initialized and configured HAL instance.
- */
 static void testLeds(HAL *hal)
 {
     if (!hal->leds || hal->numLeds == 0) {
@@ -499,6 +491,7 @@ static void testLeds(HAL *hal)
 
     for (int i = 0; i < hal->numLeds; i++) {
         HAL_Led_t *led = &hal->leds[i];
+        if (led->isBidirSlave) continue;
         led->setConstant(led->impl, HAL_LED_MODE_ON);
         usleep(10000);                          /* 10 ms on */
         led->setConstant(led->impl, HAL_LED_MODE_OFF);

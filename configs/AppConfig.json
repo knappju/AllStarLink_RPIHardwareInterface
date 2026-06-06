@@ -1,5 +1,5 @@
 {
-    "appConfigVersion": "2.0",
+    "appConfigVersion": "3.0",
     "mainTxLed": "none",
     "mainRxLed": "none",
     "mainAux1Led": "none",
@@ -9,10 +9,10 @@
         {
             "channelNumber": 1,
             "node": "2324",
-            "con1Led" : "none",
-            "con2Led" : "none",
-            "txLed": "none",
-            "rxLed": "none",
+            "con1Led" : "mcp_bidir_con1",
+            "con2Led" : "mcp_bidir_con2",
+            "txLed": "mcp_led1",
+            "rxLed": "mcp_led2",
             "button": "button1"
         },
         {

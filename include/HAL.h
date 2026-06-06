@@ -40,7 +40,8 @@ typedef enum {
 /* ── Button abstraction ─────────────────────────────────────────────────── */
 
 typedef enum {
-    HAL_BUTTON_TYPE_GPIO = 0,  /* wiringPi GPIO button */
+    HAL_BUTTON_TYPE_GPIO     = 0,  /* wiringPi GPIO button */
+    HAL_BUTTON_TYPE_MCP23017 = 1,  /* MCP23017 I2C expander button */
 } HALButtonType_t;
 
 typedef struct {
@@ -73,6 +74,7 @@ typedef enum {
 
 typedef struct {
     HALLedType_t   type;
+    bool           isBidirSlave;        /* true for the pin2/con2 half of a bidir pair */
     char           logicalName[64];      /* name from HardwareDefinitions.json */
     void          *impl;                /* opaque pointer to driver memory */
     /* vtable: populated by HALLoadConfig() based on the driver type */
@@ -84,6 +86,18 @@ typedef struct {
 
 /* ── HAL ────────────────────────────────────────────────────────────────── */
 
+/* Maximum number of distinct MCP23017 chips that can be registered.
+ * The MCP23017 supports up to 8 devices per I2C bus (addresses 0x20–0x27). */
+#define MCP23017_MAX_DEVICES 8
+
+/* Registry entry for one MCP23017 chip. The device pointer is typed as void*
+ * to avoid pulling MCP23017Device.h into every file that includes HAL.h. */
+typedef struct {
+    int     i2cBus;
+    uint8_t i2cAddress;
+    void   *device;  /* MCP23017Device_t* — cast in HAL.c */
+} MCP23017DeviceEntry_t;
+
 typedef struct {
     pthread_t        id;
     pthread_mutex_t  HALLock;     /* guards the button/LED arrays during config load */
@@ -92,6 +106,8 @@ typedef struct {
     HAL_Led_t       *leds;        /* heap-allocated array, length = numLeds */
     int              numLeds;
     bool             initialized;
+    MCP23017DeviceEntry_t mcp23017Devices[MCP23017_MAX_DEVICES];
+    int               numMCP23017Devices;
 } HAL;
 
 /* ── Lifecycle ──────────────────────────────────────────────────────────── */

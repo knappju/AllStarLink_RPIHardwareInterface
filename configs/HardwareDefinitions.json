@@ -32,14 +32,11 @@
         "interrupt" : "both"
     },
     {
-        "type" : "gpioLed",
-        "pin" : 1,
-        "logicalName" : "led1"
-    },
-    {
-        "type" : "gpioLed",
-        "pin" : 4,
-        "logicalName" : "led2"
+        "type"         : "gpioBidirLed",
+        "pin1"         : 1,
+        "pin2"         : 4,
+        "logicalName1" : "led1",
+        "logicalName2" : "led2"
     },
     {
         "type" : "gpioLed",
@@ -52,14 +49,11 @@
         "logicalName" : "led4"
     },
     {
-        "type" : "gpioLed",
-        "pin" : 26,
-        "logicalName" : "led5"
-    },
-    {
-        "type" : "gpioLed",
-        "pin" : 27,
-        "logicalName" : "led6"
+        "type"         : "gpioBidirLed",
+        "pin1"         : 26,
+        "pin2"         : 27,    
+        "logicalName1" : "led5",
+        "logicalName2" : "led6"
     },
     {
         "type" : "gpioLed",
@@ -72,14 +66,11 @@
         "logicalName" : "led8"
     },
     {
-        "type" : "gpioLed",
-        "pin" : 21,
-        "logicalName" : "led9"
-    },
-    {
-        "type" : "gpioLed",
-        "pin" : 22,
-        "logicalName" : "led10"
+        "type"         : "gpioBidirLed",
+        "pin1"         : 21,
+        "pin2"         : 22,
+        "logicalName1" : "led9",
+        "logicalName2" : "led10"
     },
     {
         "type" : "gpioLed",
@@ -90,5 +81,42 @@
         "type" : "gpioLed",
         "pin" : 24,
         "logicalName" : "led12"
+    },
+    {
+        "type"          : "MCP23017Button",
+        "i2cBus"        : 1,
+        "i2cAddress"    : 32,
+        "port"          : "A",
+        "pin"           : 0, 
+        "intGpioPin"    : 25,
+        "debounceTimeMS": 40,
+        "pull"          : "up",
+        "logicalName"   : "mcp_button1"
+    },
+    {
+        "type"          : "MCP23017BidirLed",
+        "i2cBus"        : 1,
+        "i2cAddress"    : 32,
+        "port"          : "A",
+        "pin1"          : 7,
+        "pin2"          : 6,
+        "logicalName1"  : "mcp_bidir_con1",
+        "logicalName2"  : "mcp_bidir_con2"
+    },
+    {
+        "type"         : "MCP23017Led",
+        "i2cBus"       : 1,
+        "i2cAddress"   : 32,
+        "port"         : "A",
+        "pin"          : 5,
+        "logicalName"  : "mcp_led1"
+    },
+    {
+        "type"         : "MCP23017Led",
+        "i2cBus"       : 1,
+        "i2cAddress"   : 32,    
+        "port"         : "A",
+        "pin"          : 4,
+        "logicalName"  : "mcp_led2"
     }
 ]
