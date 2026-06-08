@@ -27,10 +27,12 @@
 
 static void mcp23017ChipInterrupt(int gpioPin);
 
-/* Maps a real RPi GPIO pin to the device+port it services. */
+/* Maps a real RPi GPIO pin to the (device, port) pairs it services.
+ * Up to 2 entries per pin so both INTA and INTB can share one GPIO line. */
 typedef struct {
-    MCP23017Device_t *device;
-    uint8_t           port;   /* 0 = port A, 1 = port B */
+    MCP23017Device_t *device[2];
+    uint8_t           port[2];
+    int               count;
 } MCP23017IntSlot_t;
 
 static MCP23017IntSlot_t intSlotLookup[40] = {0};
@@ -218,13 +220,24 @@ void mcp23017RegisterPortISR(MCP23017Device_t *device, uint8_t port, int intGpio
     bool *registered = (port == 0) ? &device->intARegistered : &device->intBRegistered;
     if (*registered) return;
 
-    intSlotLookup[intGpioPin].device = device;
-    intSlotLookup[intGpioPin].port   = port;
+    MCP23017IntSlot_t *slot = &intSlotLookup[intGpioPin];
+    if (slot->count < 2) {
+        slot->device[slot->count] = device;
+        slot->port[slot->count]   = port;
+        slot->count++;
+    }
 
     if (port == 0) device->intGpioPinA = intGpioPin;
     else           device->intGpioPinB = intGpioPin;
 
-    wiringPiISR(intGpioPin, INT_EDGE_FALLING, mcp23017_int_isr_table[intGpioPin]);
+    /* Configure the RPi GPIO: input with pull-up (INT is active-low). */
+    pinMode(intGpioPin, INPUT);
+    pullUpDnControl(intGpioPin, PUD_UP);
+
+    /* Only register the ISR once per GPIO pin regardless of how many ports share it. */
+    if (slot->count == 1)
+        wiringPiISR(intGpioPin, INT_EDGE_FALLING, mcp23017_int_isr_table[intGpioPin]);
+
     *registered = true;
 }
 
@@ -234,26 +247,29 @@ static void mcp23017ChipInterrupt(int gpioPin)
 {
     if (gpioPin < 0 || gpioPin > 39) return;
 
-    MCP23017Device_t *dev  = intSlotLookup[gpioPin].device;
-    uint8_t           port = intSlotLookup[gpioPin].port;
-    if (!dev) return;
+    MCP23017IntSlot_t *slot = &intSlotLookup[gpioPin];
 
-    /* Hold i2cLock across both the I2C reads and the dispatch loop so that
-     * a concurrent mcp23017UnregisterButtonDispatch cannot clear a slot
-     * between the INTF check and the armFn call. */
-    pthread_mutex_lock(&dev->i2cLock);
+    for (int j = 0; j < slot->count; j++) {
+        MCP23017Device_t *dev  = slot->device[j];
+        uint8_t           port = slot->port[j];
+        if (!dev) continue;
 
-    uint8_t intf = 0, dummy = 0;
-    mcp23017ReadReg(dev, port == 0 ? MCP23017_INTFA  : MCP23017_INTFB,  &intf);
-    /* Reading INTCAP clears the interrupt so the next edge can be captured. */
-    mcp23017ReadReg(dev, port == 0 ? MCP23017_INTCAPA : MCP23017_INTCAPB, &dummy);
+        /* Hold i2cLock across both the I2C reads and the dispatch loop so that
+         * a concurrent mcp23017UnregisterButtonDispatch cannot clear a slot
+         * between the INTF check and the armFn call. */
+        pthread_mutex_lock(&dev->i2cLock);
 
-    MCP23017DispatchSlot_t *dispatch = (port == 0) ? dev->buttonDispatchA
-                                                    : dev->buttonDispatchB;
-    for (int pin = 0; pin < 8; pin++) {
-        if ((intf & (1u << pin)) && dispatch[pin].armFn)
-            dispatch[pin].armFn(dispatch[pin].data);
+        uint8_t intf = 0, dummy = 0;
+        mcp23017ReadReg(dev, port == 0 ? MCP23017_INTFA   : MCP23017_INTFB,   &intf);
+        mcp23017ReadReg(dev, port == 0 ? MCP23017_INTCAPA : MCP23017_INTCAPB, &dummy);
+
+        MCP23017DispatchSlot_t *dispatch = (port == 0) ? dev->buttonDispatchA
+                                                        : dev->buttonDispatchB;
+        for (int pin = 0; pin < 8; pin++) {
+            if ((intf & (1u << pin)) && dispatch[pin].armFn)
+                dispatch[pin].armFn(dispatch[pin].data);
+        }
+
+        pthread_mutex_unlock(&dev->i2cLock);
     }
-
-    pthread_mutex_unlock(&dev->i2cLock);
 }

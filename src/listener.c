@@ -16,7 +16,7 @@
 
 #include "listener.h"
 
-#define MAX_QUEUE_SIZE 20
+#define MAX_QUEUE_SIZE 100
 
 static const char *logActionFilter[] = ACTION_FILTERS;
 

@@ -13,6 +13,22 @@
     },
     {
         "node": "27339",
-        "friendlyname": "ECR"
+        "friendlyname": "W2ECR"
+    },
+    {
+        "node": "574030",
+        "friendlyname": "CA"
+    },
+    {
+        "node": "47185",
+        "friendlyname": "WW8GM"
+    },
+    {
+        "node": "47970",
+        "friendlyname": "PHIL"
+    },
+    {
+        "node": "593430",
+        "friendlyname": "AUS"
     }
 ]

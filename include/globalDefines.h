@@ -7,7 +7,7 @@
 #ifndef GLOBALDEFINES_H
 #define GLOBALDEFINES_H
 
-#define SOFTWARE_REVISION_NUMBER "2.0.0.0"
+#define SOFTWARE_REVISION_NUMBER "3.0.0.0"
 
 /* Asterisk log action strings that are relevant to node state tracking. */
 #define ACTION_FILTERS {"RXKEY", "TXKEY", "RXUNKEY", "TXUNKEY", "LINKTRX", "LINKMONITOR", "LINKDISC"}

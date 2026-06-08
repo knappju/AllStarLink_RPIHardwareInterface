@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <time.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
@@ -34,8 +35,8 @@ typedef struct {
 typedef struct {
     HAL              hal;
     Listener         listener;
-    rbtree          *nodeTree;
     AppConfig        appConfig;
+    rbtree          *nodeTree;
     ButtonPressState *buttonStates; /* heap-allocated, one entry per appConfig channel */
 } AppMemory;
 
@@ -53,11 +54,13 @@ static void processButtons(AppMemory *mem);
 static void onButtonEvent(AppMemory *mem, int channelIdx, bool isLongPress);
 static void sendNodeCommand(int modeCmd, const char *localNode, const char *remoteNode);
 static void updateLedsForNode(AppConfig *cfg, HAL *hal, ASLNode *node);
+static void updateMainLedsForNode(AppConfig *cfg, HAL *hal, ASLNode *node);
 static void findAndUpdateNodeForAction(rbtree *nodeTree, Listener *lMem, LogAction *action, AppConfig *cfg, HAL *hal);
 /* -- Utilities -- */
 static int  checkFileExists(const char *filename);
 /* -- Debug -- */
 static void testLeds(HAL *hal);
+static void testButtons(HAL *hal);
 
 /* Set by the signal handler; checked by the main loop and child threads. */
 volatile sig_atomic_t shutdownFlag = false;
@@ -83,6 +86,7 @@ int main(void)
     }
 
     testLeds(&mem->hal);
+    //testButtons(&mem->hal);
 
     runApp(mem);
     deinitApp(mem);
@@ -425,6 +429,26 @@ static void updateLedsForNode(AppConfig *cfg, HAL *hal, ASLNode *node)
 }
 
 /**
+ * @brief Drive mainTxLed and mainRxLed when the local node's key state changes.
+ *
+ * The local node's TXKEY/RXKEY events are logged under the local node number
+ * (from rpt.conf), not under the "MAIN" sentinel. Only fires when node->name
+ * matches localNodeNumber.
+ */
+static void updateMainLedsForNode(AppConfig *cfg, HAL *hal, ASLNode *node)
+{
+    if (strcmp(node->name, "MAIN") != 0) return;
+
+    if (cfg->mainTxLedIdx >= 0)
+        HALLedSetConstant(hal, cfg->mainTxLedIdx,
+                          node->txKey ? HAL_LED_MODE_ON : HAL_LED_MODE_OFF);
+
+    if (cfg->mainRxLedIdx >= 0)
+        HALLedSetConstant(hal, cfg->mainRxLedIdx,
+                          node->rxKey ? HAL_LED_MODE_ON : HAL_LED_MODE_OFF);
+}
+
+/**
  * @brief Look up the node named in action, update its state, drive its LEDs,
  *        then free the action and remove it from the listener queue.
  *
@@ -453,6 +477,7 @@ static void findAndUpdateNodeForAction(rbtree *nodeTree, Listener *lMem, LogActi
     if (aslNode) {
         updateASLNode(aslNode, action->LastUpdate, action->action);
         updateLedsForNode(cfg, hal, aslNode);
+        updateMainLedsForNode(cfg, hal, aslNode);
     }
 
     /* Lock only for queue removal — the listener thread may enqueue new
@@ -490,16 +515,38 @@ static void testLeds(HAL *hal)
     }
 
     for (int i = 0; i < hal->numLeds; i++) {
-        HAL_Led_t *led = &hal->leds[i];
-        if (led->isBidirSlave) continue;
-        led->setConstant(led->impl, HAL_LED_MODE_ON);
-        usleep(10000);                          /* 10 ms on */
-        led->setConstant(led->impl, HAL_LED_MODE_OFF);
-        usleep(10000);                          /* 10 ms off */
-        led->setOneShot(led->impl, 50);
-        usleep(60000);                          /* 60 ms — allow one-shot to complete */
-        led->setBlink(led->impl, 100, 100);
-        usleep(420000);                         /* 420 ms — observe blink */
-        led->setConstant(led->impl, HAL_LED_MODE_OFF);
+        if (hal->leds[i].isBidirSlave) continue;
+        hal->leds[i].setConstant(hal->leds[i].impl, HAL_LED_MODE_ON);
+        usleep(100000);
+        hal->leds[i].setConstant(hal->leds[i].impl, HAL_LED_MODE_OFF);
+    }
+}
+
+static void testButtons(HAL *hal)
+{
+    if (!hal->buttons || hal->numButtons == 0) {
+        printf("No buttons configured.\n");
+        return;
+    }
+
+    uint8_t prevState[hal->numButtons];
+    for (int i = 0; i < hal->numButtons; i++)
+        hal->buttons[i].read(hal->buttons[i].impl, &prevState[i]);
+
+    printf("Button test active — press buttons to see events (Ctrl+C to exit).\n");
+
+    while (!shutdownFlag) {
+        for (int i = 0; i < hal->numButtons; i++) {
+            uint8_t state;
+            hal->buttons[i].read(hal->buttons[i].impl, &state);
+            if (state != prevState[i]) {
+                prevState[i] = state;
+                printf("%-24s %s\n",
+                       hal->buttons[i].logicalName,
+                       state == 0 ? "pressed" : "released");
+                fflush(stdout);
+            }
+        }
+        usleep(20000);
     }
 }

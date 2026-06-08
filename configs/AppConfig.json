@@ -1,46 +1,82 @@
 {
     "appConfigVersion": "3.0",
-    "mainTxLed": "none",
-    "mainRxLed": "none",
-    "mainAux1Led": "none",
-    "mainAux2Led": "none",
+    "mainTxLed": "e3_led2",
+    "mainRxLed": "e3_led1",
+    "mainAux1Led": "e3_led3",
+    "mainAux2Led": "e3_led4",
     "channelMappings":
     [
         {
             "channelNumber": 1,
-            "node": "2324",
-            "con1Led" : "mcp_bidir_con1",
-            "con2Led" : "mcp_bidir_con2",
-            "txLed": "mcp_led1",
-            "rxLed": "mcp_led2",
-            "button": "button1"
+            "node": "472440",
+            "con1Led" : "e1_led13",
+            "con2Led" : "e1_led14",
+            "txLed": "e1_led15",
+            "rxLed": "e1_led16",
+            "button": "e3_button6"
         },
         {
             "channelNumber": 2,
-            "node": "2462",
-            "con1Led" : "led1",
-            "con2Led" : "led2",
-            "txLed": "led3",
-            "rxLed": "led4",
-            "button": "button2"
+            "node": "2324",
+            "con1Led" : "e1_led9",
+            "con2Led" : "e1_led10",
+            "txLed": "e1_led11",
+            "rxLed": "e1_led12",
+            "button": "e3_button5"
         },
         {
             "channelNumber": 3,
-            "node": "472440",
-            "con1Led" : "led5",
-            "con2Led" : "led6",
-            "txLed": "led7",
-            "rxLed": "led8",
-            "button": "button3"
+            "node": "47185",
+            "con1Led" : "e1_led7",
+            "con2Led" : "e1_led8",
+            "txLed": "e1_led6",
+            "rxLed": "e1_led5",
+            "button": "e3_button4"
         },
         {
             "channelNumber": 4,
             "node": "27339",
-            "con1Led" : "led9",
-            "con2Led" : "led10",
-            "txLed": "led11",
-            "rxLed": "led12",
-            "button": "button4"
+            "con1Led" : "e1_led3",
+            "con2Led" : "e1_led4",
+            "txLed": "e1_led2",
+            "rxLed": "e1_led1",
+            "button": "e3_button3"
+        },
+        {
+            "channelNumber": 5,
+            "node": "2462",
+            "con1Led" : "e2_led9",
+            "con2Led" : "e2_led10",
+            "txLed": "e2_led11",
+            "rxLed": "e2_led12",
+            "button": "e3_button7"
+        },
+        {
+            "channelNumber": 6,
+            "node": "574030",
+            "con1Led" : "e2_led13",
+            "con2Led" : "e2_led14",
+            "txLed": "e2_led15",
+            "rxLed": "e2_led16",
+            "button": "e3_button8"
+        },
+        {
+            "channelNumber": 7,
+            "node": "47970",
+            "con1Led" : "e2_led7",
+            "con2Led" : "e2_led8",
+            "txLed": "e2_led6",
+            "rxLed": "e2_led5",
+            "button": "e3_button9"
+        },
+        {
+            "channelNumber": 8,
+            "node": "593430",
+            "con1Led" : "e2_led3",
+            "con2Led" : "e2_led4",
+            "txLed": "e2_led2",
+            "rxLed": "e2_led1",
+            "button": "e3_button10"
         }
     ]
     

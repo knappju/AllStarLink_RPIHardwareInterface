@@ -264,6 +264,16 @@ HALStatus_t HALLoadConfig(HAL *hal, const char *configFilePath)
         json_object_object_get_ex(item, "logicalName", &nameObj);
         const char *name = nameObj ? json_object_get_string(nameObj) : "";
 
+        /* Bidir types use logicalName1/logicalName2 — checked inside their
+         * own branches.  All other types require a non-empty logicalName. */
+        bool isBidir = (strcmp(type, "gpioBidirLed")     == 0 ||
+                        strcmp(type, "MCP23017BidirLed") == 0);
+        if (!isBidir && name[0] == '\0') {
+            fprintf(stderr, "HALLoadConfig: %s entry %d missing or empty 'logicalName', skipping\n",
+                    type, i);
+            continue;
+        }
+
         if (strcmp(type, "gpioButton") == 0) {
             json_object_object_get_ex(item, "pin",           &pinObj);
             json_object_object_get_ex(item, "debounceTimeMS",&debounceObj);
@@ -319,10 +329,21 @@ HALStatus_t HALLoadConfig(HAL *hal, const char *configFilePath)
             json_object_object_get_ex(item, "logicalName1", &name1Obj);
             json_object_object_get_ex(item, "logicalName2", &name2Obj);
 
-            int        pin1 = pin1Obj  ? json_object_get_int(pin1Obj)    : -1;
-            int        pin2 = pin2Obj  ? json_object_get_int(pin2Obj)    : -1;
+            int        pin1 = pin1Obj  ? json_object_get_int(pin1Obj)     : -1;
+            int        pin2 = pin2Obj  ? json_object_get_int(pin2Obj)     : -1;
             const char *n1  = name1Obj ? json_object_get_string(name1Obj) : "";
             const char *n2  = name2Obj ? json_object_get_string(name2Obj) : "";
+
+            if (n1[0] == '\0' || n2[0] == '\0') {
+                fprintf(stderr, "HALLoadConfig: gpioBidirLed entry %d missing "
+                                "'logicalName1' or 'logicalName2', skipping\n", i);
+                continue;
+            }
+            if (pin1 == pin2) {
+                fprintf(stderr, "HALLoadConfig: gpioBidirLed '%s'/'%s' pin1 and pin2 "
+                                "are the same (%d), skipping\n", n1, n2, pin1);
+                continue;
+            }
 
             void *impl1 = gpioLedInit(pin1);
             if (impl1) {
@@ -360,10 +381,16 @@ HALStatus_t HALLoadConfig(HAL *hal, const char *configFilePath)
             json_object_object_get_ex(item, "port",       &portObj);
             json_object_object_get_ex(item, "pin",        &pinObj);
 
+            if (!pinObj || !i2cAddrObj) {
+                fprintf(stderr, "HALLoadConfig: MCP23017Led '%s' missing required "
+                                "'pin' or 'i2cAddress'\n", name);
+                continue;
+            }
+
             int     i2cBus  = i2cBusObj  ? json_object_get_int(i2cBusObj)             : 1;
-            int     i2cAddr = i2cAddrObj ? json_object_get_int(i2cAddrObj)            : 0x20;
+            int     i2cAddr = json_object_get_int(i2cAddrObj);
             uint8_t port    = portObj    ? parsePort(json_object_get_string(portObj)) : 0;
-            uint8_t pin     = pinObj     ? (uint8_t)json_object_get_int(pinObj)       : 0;
+            uint8_t pin     = (uint8_t)json_object_get_int(pinObj);
 
             MCP23017Device_t *dev = halGetOrCreateMCP23017Device(hal, i2cBus, (uint8_t)i2cAddr);
             if (!dev) {
@@ -398,10 +425,16 @@ HALStatus_t HALLoadConfig(HAL *hal, const char *configFilePath)
             json_object_object_get_ex(item, "debounceTimeMS",&debounceObj);
             json_object_object_get_ex(item, "pull",          &pullObj);
 
-            int     i2cBus     = i2cBusObj     ? json_object_get_int(i2cBusObj)              : 1;
-            int     i2cAddr    = i2cAddrObj    ? json_object_get_int(i2cAddrObj)             : 0x20;
-            uint8_t port       = portObj       ? parsePort(json_object_get_string(portObj))  : 0;
-            uint8_t pin        = pinObj        ? (uint8_t)json_object_get_int(pinObj)        : 0;
+            if (!pinObj || !i2cAddrObj) {
+                fprintf(stderr, "HALLoadConfig: MCP23017Button '%s' missing required "
+                                "'pin' or 'i2cAddress'\n", name);
+                continue;
+            }
+
+            int     i2cBus     = i2cBusObj     ? json_object_get_int(i2cBusObj)             : 1;
+            int     i2cAddr    = json_object_get_int(i2cAddrObj);
+            uint8_t port       = portObj       ? parsePort(json_object_get_string(portObj)) : 0;
+            uint8_t pin        = (uint8_t)json_object_get_int(pinObj);
             int     intGpioPin = intGpioPinObj ? json_object_get_int(intGpioPinObj)          : -1;
             int     debounce   = debounceObj   ? json_object_get_int(debounceObj)            : 50;
             bool    pullup     = pullObj && strcmp(json_object_get_string(pullObj), "up") == 0;
@@ -447,13 +480,31 @@ HALStatus_t HALLoadConfig(HAL *hal, const char *configFilePath)
             json_object_object_get_ex(item, "logicalName1", &name1Obj);
             json_object_object_get_ex(item, "logicalName2", &name2Obj);
 
-            int     i2cBus  = i2cBusObj  ? json_object_get_int(i2cBusObj)             : 1;
-            int     i2cAddr = i2cAddrObj ? json_object_get_int(i2cAddrObj)            : 0x20;
-            uint8_t port    = portObj    ? parsePort(json_object_get_string(portObj)) : 0;
-            uint8_t pin1    = pin1Obj    ? (uint8_t)json_object_get_int(pin1Obj)      : 0;
-            uint8_t pin2    = pin2Obj    ? (uint8_t)json_object_get_int(pin2Obj)      : 1;
-            const char *n1  = name1Obj   ? json_object_get_string(name1Obj)           : "";
-            const char *n2  = name2Obj   ? json_object_get_string(name2Obj)           : "";
+            const char *n1  = name1Obj ? json_object_get_string(name1Obj) : "";
+            const char *n2  = name2Obj ? json_object_get_string(name2Obj) : "";
+
+            if (n1[0] == '\0' || n2[0] == '\0') {
+                fprintf(stderr, "HALLoadConfig: MCP23017BidirLed entry %d missing "
+                                "'logicalName1' or 'logicalName2', skipping\n", i);
+                continue;
+            }
+            if (!pin1Obj || !pin2Obj || !i2cAddrObj) {
+                fprintf(stderr, "HALLoadConfig: MCP23017BidirLed '%s'/'%s' missing "
+                                "'pin1', 'pin2', or 'i2cAddress', skipping\n", n1, n2);
+                continue;
+            }
+
+            int     i2cBus  = i2cBusObj ? json_object_get_int(i2cBusObj)              : 1;
+            int     i2cAddr = json_object_get_int(i2cAddrObj);
+            uint8_t port    = portObj   ? parsePort(json_object_get_string(portObj))  : 0;
+            uint8_t pin1    = (uint8_t)json_object_get_int(pin1Obj);
+            uint8_t pin2    = (uint8_t)json_object_get_int(pin2Obj);
+
+            if (pin1 == pin2) {
+                fprintf(stderr, "HALLoadConfig: MCP23017BidirLed '%s'/'%s' pin1 and pin2 "
+                                "are the same (%d), skipping\n", n1, n2, pin1);
+                continue;
+            }
 
             MCP23017Device_t *dev = halGetOrCreateMCP23017Device(hal, i2cBus, (uint8_t)i2cAddr);
             if (!dev) {

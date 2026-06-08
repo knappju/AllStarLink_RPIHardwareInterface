@@ -79,7 +79,7 @@ gpioButtonMemory_t *gpioButtonInit(int pin, int pull, int debounceTimeMs, int in
     };
     if (timer_create(CLOCK_MONOTONIC, &sev, &buttonMemory->debounceTimer) != 0) {
         free(buttonMemory);
-        buttonMemLookUp[pin - 1] = NULL;
+        buttonMemLookUp[pin] = NULL;
         return NULL;
     }
  

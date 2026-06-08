@@ -1,97 +1,45 @@
 [
     {
-        "type" : "gpioButton",
-        "pin" : 7, 
-        "logicalName" : "button1",
-        "debounceTimeMS" : 40,
-        "pull" : "off",
-        "interrupt" : "both"
+        "type"         : "MCP23017Led",
+        "i2cBus"       : 1,
+        "i2cAddress"   : 32,
+        "port"         : "A",
+        "pin"          : 0,
+        "logicalName"  : "e1_led1"
     },
     {
-        "type" : "gpioButton",
-        "pin" : 0, 
-        "logicalName" : "button2",
-        "debounceTimeMS" : 40,
-        "pull" : "off",
-        "interrupt" : "both"
+        "type"         : "MCP23017Led",
+        "i2cBus"       : 1,
+        "i2cAddress"   : 32,
+        "port"         : "A",
+        "pin"          : 1,
+        "logicalName"  : "e1_led2"
     },
     {
-        "type" : "gpioButton",
-        "pin" : 2, 
-        "logicalName" : "button3",
-        "debounceTimeMS" : 40,
-        "pull" : "off",
-        "interrupt" : "both"
-    },
-    {
-        "type" : "gpioButton",
-        "pin" : 3, 
-        "logicalName" : "button4",
-        "debounceTimeMS" : 40,
-        "pull" : "off",
-        "interrupt" : "both"
-    },
-    {
-        "type"         : "gpioBidirLed",
-        "pin1"         : 1,
-        "pin2"         : 4,
-        "logicalName1" : "led1",
-        "logicalName2" : "led2"
-    },
-    {
-        "type" : "gpioLed",
-        "pin" : 5,
-        "logicalName" : "led3"
-    },
-    {
-        "type" : "gpioLed",
-        "pin" : 6,
-        "logicalName" : "led4"
-    },
-    {
-        "type"         : "gpioBidirLed",
-        "pin1"         : 26,
-        "pin2"         : 27,    
-        "logicalName1" : "led5",
-        "logicalName2" : "led6"
-    },
-    {
-        "type" : "gpioLed",
-        "pin" : 28,
-        "logicalName" : "led7"
-    },
-    {
-        "type" : "gpioLed",
-        "pin" : 29,
-        "logicalName" : "led8"
-    },
-    {
-        "type"         : "gpioBidirLed",
-        "pin1"         : 21,
-        "pin2"         : 22,
-        "logicalName1" : "led9",
-        "logicalName2" : "led10"
-    },
-    {
-        "type" : "gpioLed",
-        "pin" : 23,
-        "logicalName" : "led11"
-    },
-    {
-        "type" : "gpioLed",
-        "pin" : 24,
-        "logicalName" : "led12"
-    },
-    {
-        "type"          : "MCP23017Button",
+        "type"          : "MCP23017BidirLed",
         "i2cBus"        : 1,
         "i2cAddress"    : 32,
         "port"          : "A",
-        "pin"           : 0, 
-        "intGpioPin"    : 25,
-        "debounceTimeMS": 40,
-        "pull"          : "up",
-        "logicalName"   : "mcp_button1"
+        "pin1"          : 3,
+        "pin2"          : 2,
+        "logicalName1"  : "e1_led3",
+        "logicalName2"  : "e1_led4"
+    },
+    {
+        "type"         : "MCP23017Led",
+        "i2cBus"       : 1,
+        "i2cAddress"   : 32,
+        "port"         : "A",
+        "pin"          : 4,
+        "logicalName"  : "e1_led5"
+    },
+    {
+        "type"         : "MCP23017Led",
+        "i2cBus"       : 1,
+        "i2cAddress"   : 32,
+        "port"         : "A",
+        "pin"          : 5,
+        "logicalName"  : "e1_led6"
     },
     {
         "type"          : "MCP23017BidirLed",
@@ -100,23 +48,327 @@
         "port"          : "A",
         "pin1"          : 7,
         "pin2"          : 6,
-        "logicalName1"  : "mcp_bidir_con1",
-        "logicalName2"  : "mcp_bidir_con2"
+        "logicalName1"  : "e1_led7",
+        "logicalName2"  : "e1_led8"
+    },
+    {
+        "type"          : "MCP23017BidirLed",
+        "i2cBus"        : 1,
+        "i2cAddress"    : 32,
+        "port"          : "B",
+        "pin1"          : 0,
+        "pin2"          : 1,
+        "logicalName1"  : "e1_led9",
+        "logicalName2"  : "e1_led10"
     },
     {
         "type"         : "MCP23017Led",
         "i2cBus"       : 1,
         "i2cAddress"   : 32,
-        "port"         : "A",
-        "pin"          : 5,
-        "logicalName"  : "mcp_led1"
+        "port"         : "B",
+        "pin"          : 2,
+        "logicalName"  : "e1_led11"
     },
     {
         "type"         : "MCP23017Led",
         "i2cBus"       : 1,
-        "i2cAddress"   : 32,    
+        "i2cAddress"   : 32,
+        "port"         : "B",
+        "pin"          : 3,
+        "logicalName"  : "e1_led12"
+    },
+    {
+        "type"          : "MCP23017BidirLed",
+        "i2cBus"        : 1,
+        "i2cAddress"    : 32,
+        "port"          : "B",
+        "pin1"          : 4,
+        "pin2"          : 5,
+        "logicalName1"  : "e1_led13",
+        "logicalName2"  : "e1_led14"
+    },
+    {
+        "type"         : "MCP23017Led",
+        "i2cBus"       : 1,
+        "i2cAddress"   : 32,
+        "port"         : "B",
+        "pin"          : 6,
+        "logicalName"  : "e1_led15"
+    },
+    {
+        "type"         : "MCP23017Led",
+        "i2cBus"       : 1,
+        "i2cAddress"   : 32,
+        "port"         : "B",
+        "pin"          : 7,
+        "logicalName"  : "e1_led16"
+    },
+    {
+        "type"         : "MCP23017Led",
+        "i2cBus"       : 1,
+        "i2cAddress"   : 33,
+        "port"         : "A",
+        "pin"          : 0,
+        "logicalName"  : "e2_led1"
+    },
+    {
+        "type"         : "MCP23017Led",
+        "i2cBus"       : 1,
+        "i2cAddress"   : 33,
+        "port"         : "A",
+        "pin"          : 1,
+        "logicalName"  : "e2_led2"
+    },
+    {
+        "type"          : "MCP23017BidirLed",
+        "i2cBus"        : 1,
+        "i2cAddress"    : 33,
+        "port"          : "A",
+        "pin1"          : 3,
+        "pin2"          : 2,
+        "logicalName1"  : "e2_led3",
+        "logicalName2"  : "e2_led4"
+    },
+    {
+        "type"         : "MCP23017Led",
+        "i2cBus"       : 1,
+        "i2cAddress"   : 33,
         "port"         : "A",
         "pin"          : 4,
-        "logicalName"  : "mcp_led2"
+        "logicalName"  : "e2_led5"
+    },
+    {
+        "type"         : "MCP23017Led",
+        "i2cBus"       : 1,
+        "i2cAddress"   : 33,
+        "port"         : "A",
+        "pin"          : 5,
+        "logicalName"  : "e2_led6"
+    },
+    {
+        "type"          : "MCP23017BidirLed",
+        "i2cBus"        : 1,
+        "i2cAddress"    : 33,
+        "port"          : "A",
+        "pin1"          : 7,
+        "pin2"          : 6,
+        "logicalName1"  : "e2_led7",
+        "logicalName2"  : "e2_led8"
+    },
+    {
+        "type"          : "MCP23017BidirLed",
+        "i2cBus"        : 1,
+        "i2cAddress"    : 33,
+        "port"          : "B",
+        "pin1"          : 0,
+        "pin2"          : 1,
+        "logicalName1"  : "e2_led9",
+        "logicalName2"  : "e2_led10"
+    },
+    {
+        "type"         : "MCP23017Led",
+        "i2cBus"       : 1,
+        "i2cAddress"   : 33,
+        "port"         : "B",
+        "pin"          : 2,
+        "logicalName"  : "e2_led11"
+    },
+    {
+        "type"         : "MCP23017Led",
+        "i2cBus"       : 1,
+        "i2cAddress"   : 33,
+        "port"         : "B",
+        "pin"          : 3,
+        "logicalName"  : "e2_led12"
+    },
+    {
+        "type"          : "MCP23017BidirLed",
+        "i2cBus"        : 1,
+        "i2cAddress"    : 33,
+        "port"          : "B",
+        "pin1"          : 4,
+        "pin2"          : 5,
+        "logicalName1"  : "e2_led13",
+        "logicalName2"  : "e2_led14"
+    },
+    {
+        "type"         : "MCP23017Led",
+        "i2cBus"       : 1,
+        "i2cAddress"   : 33,
+        "port"         : "B",
+        "pin"          : 6,
+        "logicalName"  : "e2_led15"
+    },
+    {
+        "type"         : "MCP23017Led",
+        "i2cBus"       : 1,
+        "i2cAddress"   : 33,
+        "port"         : "B",
+        "pin"          : 7,
+        "logicalName"  : "e2_led16"
+    },
+    {
+        "type"          : "MCP23017Button",
+        "i2cBus"        : 1,
+        "i2cAddress"    : 34,
+        "port"          : "A",
+        "pin"           : 0,
+        "intGpioPin"    : 27,
+        "debounceTimeMS": 40,
+        "pull"          : "off",
+        "logicalName"   : "e3_button1"
+    },
+    {
+        "type"          : "MCP23017Button",
+        "i2cBus"        : 1,
+        "i2cAddress"    : 34,
+        "port"          : "A",
+        "pin"           : 1,
+        "intGpioPin"    : 27,
+        "debounceTimeMS": 40,
+        "pull"          : "off",
+        "logicalName"   : "e3_button2"
+    },
+    {
+        "type"          : "MCP23017Button",
+        "i2cBus"        : 1,
+        "i2cAddress"    : 34,
+        "port"          : "A",
+        "pin"           : 2,
+        "intGpioPin"    : 27,
+        "debounceTimeMS": 40,
+        "pull"          : "off",
+        "logicalName"   : "e3_button3"
+    },
+    {
+        "type"          : "MCP23017Button",
+        "i2cBus"        : 1,
+        "i2cAddress"    : 34,
+        "port"          : "A",
+        "pin"           : 3,
+        "intGpioPin"    : 27,
+        "debounceTimeMS": 40,
+        "pull"          : "off",
+        "logicalName"   : "e3_button4"
+    },
+    {
+        "type"          : "MCP23017Button",
+        "i2cBus"        : 1,
+        "i2cAddress"    : 34,
+        "port"          : "A",
+        "pin"           : 4,
+        "intGpioPin"    : 27,
+        "debounceTimeMS": 40,
+        "pull"          : "off",
+        "logicalName"   : "e3_button5"
+    },
+    {
+        "type"          : "MCP23017Button",
+        "i2cBus"        : 1,
+        "i2cAddress"    : 34,
+        "port"          : "A",
+        "pin"           : 5,
+        "intGpioPin"    : 27,
+        "debounceTimeMS": 40,
+        "pull"          : "off",
+        "logicalName"   : "e3_button6"
+    },
+    {
+        "type"         : "MCP23017Led",
+        "i2cBus"       : 1,
+        "i2cAddress"   : 34,
+        "port"         : "A",
+        "pin"          : 6,
+        "logicalName"  : "e3_led1"
+    },
+    {
+        "type"         : "MCP23017Led",
+        "i2cBus"       : 1,
+        "i2cAddress"   : 34,
+        "port"         : "A",
+        "pin"          : 7,
+        "logicalName"  : "e3_led2"
+    },
+    {
+        "type"          : "MCP23017Button",
+        "i2cBus"        : 1,
+        "i2cAddress"    : 34,
+        "port"          : "B",
+        "pin"           : 0,
+        "intGpioPin"    : 28,
+        "debounceTimeMS": 40,
+        "pull"          : "off",
+        "logicalName"   : "e3_button7"
+    },
+    {
+        "type"          : "MCP23017Button",
+        "i2cBus"        : 1,
+        "i2cAddress"    : 34,
+        "port"          : "B",
+        "pin"           : 1,
+        "intGpioPin"    : 28,
+        "debounceTimeMS": 40,
+        "pull"          : "off",
+        "logicalName"   : "e3_button8"
+    },
+    {
+        "type"          : "MCP23017Button",
+        "i2cBus"        : 1,
+        "i2cAddress"    : 34,
+        "port"          : "B",
+        "pin"           : 2,
+        "intGpioPin"    : 28,
+        "debounceTimeMS": 40,
+        "pull"          : "off",
+        "logicalName"   : "e3_button9"
+    },
+    {
+        "type"          : "MCP23017Button",
+        "i2cBus"        : 1,
+        "i2cAddress"    : 34,
+        "port"          : "B",
+        "pin"           : 3,
+        "intGpioPin"    : 28,
+        "debounceTimeMS": 40,
+        "pull"          : "off",
+        "logicalName"   : "e3_button10"
+    },
+    {
+        "type"          : "MCP23017Button",
+        "i2cBus"        : 1,
+        "i2cAddress"    : 34,
+        "port"          : "B",
+        "pin"           : 4,
+        "intGpioPin"    : 28,
+        "debounceTimeMS": 40,
+        "pull"          : "off",
+        "logicalName"   : "e3_button11"
+    },
+    {
+        "type"          : "MCP23017Button",
+        "i2cBus"        : 1,
+        "i2cAddress"    : 34,
+        "port"          : "B",
+        "pin"           : 5,
+        "intGpioPin"    : 28,
+        "debounceTimeMS": 40,
+        "pull"          : "off",
+        "logicalName"   : "e3_button12"
+    },
+    {
+        "type"         : "MCP23017Led",
+        "i2cBus"       : 1,
+        "i2cAddress"   : 34,
+        "port"         : "B",
+        "pin"          : 6,
+        "logicalName"  : "e3_led3"
+    },
+    {
+        "type"         : "MCP23017Led",
+        "i2cBus"       : 1,
+        "i2cAddress"   : 34,
+        "port"         : "B",
+        "pin"          : 7,
+        "logicalName"  : "e3_led4"
     }
 ]
